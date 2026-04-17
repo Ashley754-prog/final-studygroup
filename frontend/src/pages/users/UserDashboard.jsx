@@ -18,39 +18,41 @@ export default function UserDashboard() {
   const [joinedGroups, setJoinedGroups] = useState([]); // approved groups
   const [pendingRequests, setPendingRequests] = useState([]); // pending approval
 
-const fetchGroups = async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = user.id;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-    if (!userId) {
-      console.log("No user logged in");
-      return;
+  const fetchGroups = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = user.id;
+
+      if (!userId) {
+        console.log("No user logged in");
+        return;
+      }
+
+      const [allRes, myRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/group/list`),
+        axios.get(`${API_BASE_URL}/api/group/my-groups/${userId}`)
+      ]);
+
+      const approvedGroups = allRes.data.data || [];
+      const myCreatedGroups = myRes.data.data || [];
+
+      // 🔥 FILTER OUT GROUPS YOU CREATED
+      const filteredGroups = approvedGroups.filter(g => g.created_by !== userId);
+
+      // Set state
+      setAllGroups(filteredGroups);      // AVAILABLE groups
+      setUserGroups(myCreatedGroups);    // CREATED groups
+
+      // Joined groups
+      const joinedRes = await axios.get(`${API_BASE_URL}/api/group/my-joined/${userId}`);
+      setJoinedGroups(joinedRes.data.data?.map(g => g.id) || []);
+
+    } catch (err) {
+      console.error("Error fetching dashboard:", err);
     }
-
-    const [allRes, myRes] = await Promise.all([
-      axios.get("http://localhost:5000/api/group/list"),
-      axios.get(`http://localhost:5000/api/group/my-groups/${userId}`)
-    ]);
-
-    const approvedGroups = allRes.data.data || [];
-    const myCreatedGroups = myRes.data.data || [];
-
-    // 🔥 FILTER OUT GROUPS YOU CREATED
-    const filteredGroups = approvedGroups.filter(g => g.created_by !== userId);
-
-    // Set state
-    setAllGroups(filteredGroups);      // AVAILABLE groups
-    setUserGroups(myCreatedGroups);    // CREATED groups
-
-    // Joined groups
-    const joinedRes = await axios.get(`http://localhost:5000/api/group/my-joined/${userId}`);
-    setJoinedGroups(joinedRes.data.data?.map(g => g.id) || []);
-
-  } catch (err) {
-    console.error("Error fetching dashboard:", err);
-  }
-};
+  };
 
   useEffect(() => {
     fetchGroups();
@@ -78,7 +80,8 @@ const handleJoinGroup = async (groupId) => {
     if (!userId) return toast.error("You must be logged in to join a group.");
 
     // Include groupId in the POST body
-    const res = await axios.post(`http://localhost:5000/api/group/join`, {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.post(`${API_BASE_URL}/api/group/join`, {
       groupId,
       userId
     });

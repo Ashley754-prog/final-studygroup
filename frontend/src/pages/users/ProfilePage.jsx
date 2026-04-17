@@ -24,7 +24,8 @@ useEffect(() => {
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/users/me", {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/users/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -73,7 +74,8 @@ const handleSave = async () => {
     if (user.newPhotoFile) formData.append("profile_photo", user.newPhotoFile);
 
     const token = localStorage.getItem("token");
-    const res = await axios.put("http://localhost:5000/api/users/me", formData, {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.put(`${API_BASE_URL}/api/users/me`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`
