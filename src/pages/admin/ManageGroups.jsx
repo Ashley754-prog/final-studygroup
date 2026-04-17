@@ -60,7 +60,7 @@ const fetchGroups = async () => {
 useEffect(() => {
   fetchGroups(); // initial load
 
-  const socket = io("http://localhost:5000");
+  const socket = io("https://crimsons-study-squad.up.railway.app");
 
   // NEW GROUPS APPEAR INSTANTLY IN PENDING
   socket.on("newPendingGroup", (newGroup) => {

@@ -48,7 +48,7 @@ export default function InboxPage() {
     fetchNotifications();
 
     if (!userId) return;
-    const socket = io("http://localhost:5000", { transports: ["websocket", "polling"] });
+    const socket = io("https://crimsons-study-squad.up.railway.app", { transports: ["websocket", "polling"] });
 
     socket.on("connect", () => socket.emit("join", userId));
 

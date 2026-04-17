@@ -75,7 +75,7 @@ useEffect(() => {
   fetchGroups();
   fetchPendingMembers();
 
-  socket = io("http://localhost:5000");
+  socket = io("https://crimsons-study-squad.up.railway.app");
 
   socket.emit("join_creator", currentUserId);
 
