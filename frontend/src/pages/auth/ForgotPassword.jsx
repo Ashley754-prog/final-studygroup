@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import API_BASE_URL from "../config/api.js";
+import API_BASE_URL from "../../config/api.js";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();

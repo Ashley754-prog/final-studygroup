@@ -4,7 +4,7 @@ import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { loginUser } from "../../utils/auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
-import API_BASE_URL from "../config/api.js";
+import API_BASE_URL from "../../config/api.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();

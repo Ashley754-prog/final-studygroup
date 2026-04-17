@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { toast } from "react-toastify";
-import API_BASE_URL from "../config/api.js";
+import API_BASE_URL from "../../config/api.js";
 
 export default function CreateAccount() {
   const navigate = useNavigate();
