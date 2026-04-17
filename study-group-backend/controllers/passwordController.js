@@ -13,7 +13,7 @@ export const forgotPassword = async (req, res) => {
 
     const user = users[0];
 
-    // ❌ Block Google-only users
+    // Block Google-only users (no password set)
     if (!user.password && user.google_id) {
       return res.status(400).json({
         type: "google",
@@ -21,13 +21,8 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // ❌ Block hybrid users (should not normally exist)
-    if (user.password && user.google_id) {
-      return res.status(400).json({
-        type: "hybrid",
-        message: "This account uses both Google + manual login. Please contact support.",
-      });
-    }
+    // Allow hybrid users (both Google and manual login) and manual-only users
+    // They have a password, so they can reset it
 
     // ✅ Manual account — continue with reset logic
     const resetToken = crypto.randomBytes(32).toString("hex");

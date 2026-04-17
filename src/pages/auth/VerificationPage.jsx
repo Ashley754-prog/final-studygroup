@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function VerificationPage() {
   const [code, setCode] = useState("");
@@ -18,7 +19,7 @@ export default function VerificationPage() {
   const handleAccountVerification = async (e) => {
     e.preventDefault();
     if (code.length !== 6) {
-      alert("Verification code must be 6 digits.");
+      toast.error("Verification code must be 6 digits.");
       return;
     }
     setLoading(true);
@@ -34,7 +35,7 @@ export default function VerificationPage() {
       setSuccess(true);
       setTimeout(() => navigate(`/login?email=${encodeURIComponent(email)}`), 3000);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

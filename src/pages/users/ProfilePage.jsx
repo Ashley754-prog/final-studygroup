@@ -32,6 +32,11 @@ useEffect(() => {
       setUser(res.data);
       setOriginalUser(res.data);
       setPhotoPreview(res.data.profile_photo || null);
+      
+      // Save profile photo to localStorage for navbar
+      if (res.data.profile_photo) {
+        localStorage.setItem("userProfilePhoto", res.data.profile_photo);
+      }
     } catch (err) {
       console.error("Error fetching user:", err);
       toast.error("Failed to fetch user data. Please try again.");
@@ -79,6 +84,11 @@ const handleSave = async () => {
     setOriginalUser(res.data);
     setPhotoPreview(res.data.profile_photo || null);
     delete user.newPhotoFile;
+
+    // Save profile photo to localStorage for navbar
+    if (res.data.profile_photo) {
+      localStorage.setItem("userProfilePhoto", res.data.profile_photo);
+    }
 
     // show toast
     toast.success("Profile updated successfully!");

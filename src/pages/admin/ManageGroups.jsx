@@ -5,6 +5,8 @@ import { io } from "socket.io-client";
 import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
+import PromptModal from "../../components/admin/PromptModal.jsx";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState([]);
@@ -15,6 +17,19 @@ export default function ManageGroups() {
     pending: true,
     approved: false,
     declined: false,
+  });
+
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    groupId: null,
+    action: null,
+    groupName: ""
+  });
+
+  const [promptModal, setPromptModal] = useState({
+    isOpen: false,
+    groupId: null,
+    groupName: ""
   });
 
 const fetchGroups = async () => {
@@ -66,28 +81,46 @@ useEffect(() => {
   return () => socket.disconnect();
 }, []);
 
-const handleApprove = async (groupId) => {
-  if (!confirm("Approve this group?")) return;
+const handleApprove = async (groupId, groupName) => {
+  setConfirmModal({
+    isOpen: true,
+    groupId,
+    action: "approve",
+    groupName
+  });
+};
+
+const handleDecline = async (groupId, groupName) => {
+  setPromptModal({
+    isOpen: true,
+    groupId,
+    groupName
+  });
+};
+
+const confirmApprove = async () => {
   try {
-    await axios.patch(`http://localhost:5000/api/admin/approve/${groupId}`);
+    await axios.patch(`http://localhost:5000/api/admin/approve/${confirmModal.groupId}`);
     toast.success("Group approved! Creator will receive an email.");
     fetchGroups();
+    setConfirmModal({ isOpen: false, groupId: null, action: null, groupName: "" });
   } catch (err) {
     console.error(err);
     toast.error("Failed to approve group");
+    setConfirmModal({ isOpen: false, groupId: null, action: null, groupName: "" });
   }
 };
 
-const handleDecline = async (groupId) => {
-  if (!confirm("Decline this group?")) return;
-  const remarks = prompt("Reason for declining this group:") || "No remarks provided";
+const submitDecline = async (remarks) => {
   try {
-    await axios.patch(`http://localhost:5000/api/admin/decline/${groupId}`, { remarks });
+    await axios.patch(`http://localhost:5000/api/admin/decline/${promptModal.groupId}`, { remarks });
     toast.info("Group declined! Creator will receive an email.");
     fetchGroups();
+    setPromptModal({ isOpen: false, groupId: null, groupName: "" });
   } catch (err) {
     console.error(err);
     toast.error("Failed to decline group");
+    setPromptModal({ isOpen: false, groupId: null, groupName: "" });
   }
 };
 
@@ -129,10 +162,10 @@ const handleDecline = async (groupId) => {
         <td className="px-6 py-4 flex justify-center gap-2">
           {group.status === "pending" && (
             <>
-              <button onClick={() => handleApprove(group.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition">
+              <button onClick={() => handleApprove(group.id, group.group_name)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition">
                 <CheckCircleIcon className="w-4 h-4" /> Approve
               </button>
-              <button onClick={() => handleDecline(group.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition">
+              <button onClick={() => handleDecline(group.id, group.group_name)} className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition">
                 <XCircleIcon className="w-4 h-4" /> Decline
               </button>
             </>
@@ -205,6 +238,30 @@ const handleDecline = async (groupId) => {
             {renderRows(declined, "declined")}
           </tbody>
         </table>
+
+      {/* Approval Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, groupId: null, action: null, groupName: "" })}
+        onConfirm={confirmApprove}
+        title="Approve Study Group"
+        message={`Are you sure you want to approve the study group "${confirmModal.groupName}"? The creator will receive an email notification.`}
+        confirmText="Approve Group"
+        cancelText="Cancel"
+        type="info"
+      />
+
+      {/* Decline Remarks Modal */}
+      <PromptModal
+        isOpen={promptModal.isOpen}
+        onClose={() => setPromptModal({ isOpen: false, groupId: null, groupName: "" })}
+        onSubmit={submitDecline}
+        title="Decline Study Group"
+        message={`Please provide a reason for declining the study group "${promptModal.groupName}":`}
+        placeholder="Enter reason for declining this group..."
+        submitText="Decline Group"
+        cancelText="Cancel"
+      />
       </div>
     </div>
   );

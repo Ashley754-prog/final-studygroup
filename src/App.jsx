@@ -54,7 +54,8 @@ function App() {
       <Router>
         <Routes>
           {/* PUBLIC AUTH ROUTES */}
-          <Route path="/" element={<CreateAccount />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<CreateAccount />} />
           <Route path="/verify" element={<VerificationPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

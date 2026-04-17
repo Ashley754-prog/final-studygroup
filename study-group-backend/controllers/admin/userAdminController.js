@@ -36,19 +36,41 @@ export const toggleAdminRole = async (req, res) => {
   }
 };
 
-// DELETE INACTIVE USER
+// DELETE USER (any status) - with cascading delete
 export const deleteUserById = async (req, res) => {
   const userId = req.params.id;
   try {
-    const [userRows] = await pool.execute("SELECT status FROM users WHERE id = ?", [userId]);
+    const [userRows] = await pool.execute("SELECT id FROM users WHERE id = ?", [userId]);
     if (userRows.length === 0) return res.status(404).json({ message: "User not found" });
 
-    if (userRows[0].status === "active") {
-      return res.status(400).json({ message: "Cannot delete an active user" });
-    }
+    // Start transaction for cascading delete
+    await pool.query("START TRANSACTION");
 
-    await pool.execute("DELETE FROM users WHERE id = ?", [userId]);
-    res.json({ message: "User deleted successfully" });
+    try {
+      // Delete user's messages
+      await pool.execute("DELETE FROM group_messages WHERE sender_id = ?", [userId]);
+      
+      // Delete user's group memberships
+      await pool.execute("DELETE FROM group_members WHERE user_id = ?", [userId]);
+      
+      // Delete user's notifications
+      await pool.execute("DELETE FROM notifications WHERE user_id = ?", [userId]);
+      
+      // Delete user's created study groups (this will cascade to delete group members, messages, etc.)
+      await pool.execute("DELETE FROM study_groups WHERE created_by = ?", [userId]);
+      
+      // Finally delete the user
+      await pool.execute("DELETE FROM users WHERE id = ?", [userId]);
+      
+      // Commit transaction
+      await pool.query("COMMIT");
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (deleteErr) {
+      // Rollback on error
+      await pool.query("ROLLBACK");
+      throw deleteErr;
+    }
   } catch (err) {
     console.error("DB ERROR:", err);
     res.status(500).json({ message: "Failed to delete user", error: err.message });

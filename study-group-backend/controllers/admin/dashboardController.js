@@ -8,7 +8,7 @@ export const getDashboardStats = async (req, res) => {
 
     // Active groups
     const [activeGroups] = await pool.execute(
-      "SELECT COUNT(*) AS activeGroups FROM groups WHERE status = 'approved'"
+      "SELECT COUNT(*) AS activeGroups FROM study_groups WHERE status = 'approved'"
     );
 
     // Pending reports

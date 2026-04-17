@@ -75,7 +75,7 @@ const handleJoinGroup = async (groupId) => {
     const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = currentUser?.id;
 
-    if (!userId) return alert("You must be logged in to join a group.");
+    if (!userId) return toast.error("You must be logged in to join a group.");
 
     // Include groupId in the POST body
     const res = await axios.post(`http://localhost:5000/api/group/join`, {
@@ -84,14 +84,14 @@ const handleJoinGroup = async (groupId) => {
     });
 
 if (res.data.success) {
-  alert("Join request sent! Waiting for creator approval.");
+  toast.success("Join request sent! Waiting for creator approval.");
   setPendingRequests(prev => [...prev, groupId]); // ← ADD THIS LINE
 } else {
-      alert(res.data.message); // e.g., "You are already in this group"
+      toast.error(res.data.message); // e.g., "You are already in this group"
     }
   } catch (err) {
     console.error("Failed to join group:", err);
-    alert("Failed to send join request. Please try again.");
+    toast.error("Failed to send join request. Please try again.");
   }
 };
 

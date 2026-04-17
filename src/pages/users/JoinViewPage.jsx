@@ -276,7 +276,7 @@ const handleFileUpload = async (e) => {
       setShowModal(false);
 
       if (newEvent.meetingLink) {
-        toast.success(`Study date created! Google Meet link: ${newEvent.meetingLink}`);
+        toast.success(`Study date created! Meeting link: ${newEvent.meetingLink}`);
       } else {
         toast.success("Study date created!");
       }
@@ -478,7 +478,7 @@ return (
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(event.meetingLink);
-                  alert("Link copied to clipboard!");
+                  toast.success("Link copied to clipboard!");
                 }}
                 className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400 text-xs"
               >

@@ -220,3 +220,28 @@ export const checkGoogleAccount = async (req, res) => {
     res.status(500).json({ isGoogleOnly: false });
   }
 };
+
+// ---------------------- GET USER BY ID ----------------------
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [users] = await pool.query("SELECT id, username, email, first_name, last_name, is_admin FROM users WHERE id = ?", [id]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = users[0];
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      is_admin: user.is_admin
+    });
+  } catch (err) {
+    console.error("Get user by ID error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

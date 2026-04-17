@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { loginUser } from "../../utils/auth";
 import { GoogleLogin } from "@react-oauth/google";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function LoginPage() {
           const res = await fetch(`http://localhost:5000/api/auth/check-google?email=${encodeURIComponent(emailFromURL)}`);
           const data = await res.json();
           if (data.isGoogleOnly) {
-            alert("This account was created using Google Sign-In. You cannot log in with a password. Please use Google login.");
+            toast.error("This account was created using Google Sign-In. You cannot log in with a password. Please use Google login.");
           }
         } catch (err) {
           console.error("Error checking Google account:", err);
@@ -34,7 +35,7 @@ export default function LoginPage() {
 
 const handleLogin = async () => {
   if (!email.endsWith("@wmsu.edu.ph")) {
-    alert("Please use your WMSU email (@wmsu.edu.ph).");
+    toast.error("Please use your WMSU email (@wmsu.edu.ph).");
     return;
   }
 
@@ -60,13 +61,25 @@ const userData = {
 };
 localStorage.setItem("user", JSON.stringify(userData));
 
+    // Check if user is admin and set flag
+    const adminRes = await fetch(`http://localhost:5000/api/auth/user/${userData.id}`);
+    const adminData = await adminRes.json();
+    if (adminData.is_admin) {
+      localStorage.setItem("isAdmin", "true");
+    }
+
     loginUser(userData, data.token);
 
-    navigate("/user-dashboard");
+    // Redirect to admin dashboard if admin, otherwise user dashboard
+    if (adminData.is_admin) {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/user-dashboard");
+    }
 
   } catch (err) {
     console.error(err);
-    alert(err.message);
+    toast.error(err.message);
   } finally {
     setLoading(false);
   }
@@ -83,21 +96,34 @@ localStorage.setItem("user", JSON.stringify(userData));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Google Login failed");
 
-loginUser(
-  {
-    id: data.user.id || data.user._id, // ensure id is stored
-    username: data.user.username,
-    email: data.user.email,
-    first_name: data.user.first_name,
-    last_name: data.user.last_name,
-  },
-  data.token
-);
+const userData = {
+  id: data.user.id || data.user._id, // ensure id is stored
+  username: data.user.username,
+  email: data.user.email,
+  first_name: data.user.first_name,
+  last_name: data.user.last_name,
+};
 
-      navigate("/user-dashboard");
+localStorage.setItem("user", JSON.stringify(userData));
+
+// Check if user is admin and set flag
+const adminRes = await fetch(`http://localhost:5000/api/auth/user/${userData.id}`);
+const adminData = await adminRes.json();
+if (adminData.is_admin) {
+  localStorage.setItem("isAdmin", "true");
+}
+
+loginUser(userData, data.token);
+
+// Redirect to admin dashboard if admin, otherwise user dashboard
+if (adminData.is_admin) {
+  navigate("/admin/dashboard");
+} else {
+  navigate("/user-dashboard");
+}
     } catch (err) {
       console.error("Google Login Error:", err);
-      alert("Google Sign-In failed. Please try again.");
+      toast.error("Google Sign-In failed. Please try again.");
     }
   };
 
@@ -163,13 +189,13 @@ loginUser(
             <div className="flex justify-center mt-3">
               <GoogleLogin
                 onSuccess={handleGoogleLogin}
-                onError={() => alert("Google Login Failed")}
+                onError={() => toast.error("Google Login Failed")}
               />
             </div>
 
             <p className="mt-4 text-sm text-gray-600 text-center">
               Don’t have an account?{" "}
-              <Link to="/" className="text-maroon font-semibold hover:underline">
+              <Link to="/register" className="text-maroon font-semibold hover:underline">
                 Create account here
               </Link>
             </p>

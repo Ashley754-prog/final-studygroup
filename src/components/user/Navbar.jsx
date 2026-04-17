@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { InboxIcon, UserCircleIcon, HomeIcon, UsersIcon } from "@heroicons/react/24/solid";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getUsername, logoutUser } from "../../utils/auth";
@@ -9,9 +9,36 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const { unreadCount } = useNotifications();
+  const dropdownRef = useRef(null);
 
   const username = getUsername() || "Guest";
+
+  // Load profile photo from localStorage
+  useEffect(() => {
+    const savedPhoto = localStorage.getItem("userProfilePhoto");
+    if (savedPhoto) {
+      setProfilePhoto(savedPhoto);
+    }
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const handleLogout = () => {
     logoutUser();
@@ -49,10 +76,22 @@ export default function Navbar() {
           {navItem("/my-study-groups", "My Study Groups", UsersIcon)}
         </nav>
 
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2">
             <span className="font-semibold">Hi, {username}!</span>
-            <UserCircleIcon className="w-10 h-10 text-white" />
+            {profilePhoto ? (
+              <img
+                src={
+                  profilePhoto.startsWith("/uploads")
+                    ? `http://localhost:3000${profilePhoto}`
+                    : profilePhoto
+                }
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover border-2 border-white"
+              />
+            ) : (
+              <UserCircleIcon className="w-10 h-10 text-white" />
+            )}
           </button>
 
           {menuOpen && (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function ForgotPassword() {
     e.preventDefault();
 
     if (!email.endsWith("@wmsu.edu.ph")) {
-      alert("Enter your WMSU email address only.");
+      toast.error("Enter your WMSU email address only.");
       return;
     }
 
@@ -29,7 +30,7 @@ export default function ForgotPassword() {
       if (!res.ok) throw new Error(data.message || "Failed to send reset link");
 
       if (data.type === "google") {
-        alert(data.message); 
+        toast.info(data.message); 
         return;
       }
 
@@ -39,7 +40,7 @@ export default function ForgotPassword() {
         navigate(`/login?email=${encodeURIComponent(email)}`);
       }, 3000);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

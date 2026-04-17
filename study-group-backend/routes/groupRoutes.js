@@ -2,6 +2,8 @@
 import express from "express";
 const router = express.Router();
 import { pool } from "../config/db.js";
+import { io } from "../server.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 // CREATE GROUP (with pending status)
 // CREATE GROUP → PENDING FOR ADMIN APPROVAL
@@ -10,7 +12,7 @@ router.post("/create", async (req, res) => {
 
   try {
     const [result] = await pool.query(
-      `INSERT INTO groups 
+      `INSERT INTO study_groups 
        (group_name, description, created_by, size, current_members, course, topic, location, status)
        VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'pending')`,  // ← CHANGED TO 'pending'
       [group_name, description, created_by, size, course, topic, location]
@@ -45,7 +47,7 @@ router.get("/list", async (req, res) => {
   try {
     const [groups] = await pool.query(`
       SELECT g.*, u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS creator_name
-      FROM groups g
+      FROM study_groups g
       JOIN users u ON g.created_by = u.id
       WHERE g.status = 'approved'
       ORDER BY g.created_at DESC
@@ -68,7 +70,7 @@ router.get("/all", async (req, res) => {
   try {
     const [groups] = await pool.query(`
       SELECT g.*, u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS creator_name
-      FROM groups g
+      FROM study_groups g
       JOIN users u ON g.created_by = u.id
       ORDER BY g.created_at DESC
     `);
@@ -90,7 +92,7 @@ router.post("/join", async (req, res) => {
 
   try {
     // 1. Check if group exists
-    const [group] = await pool.query("SELECT * FROM groups WHERE id = ?", [groupId]);
+    const [group] = await pool.query("SELECT * FROM study_groups WHERE id = ?", [groupId]);
     if (!group.length) return res.status(404).json({ message: "Group not found" });
 
     const groupData = group[0];
@@ -177,11 +179,11 @@ router.post("/approve", async (req, res) => {
       [groupId, userId]
     );
 
-    // 2. Increment current_members in groups
-    await pool.query("UPDATE groups SET current_members = current_members + 1 WHERE id = ?", [groupId]);
+    // 2. Increment current_members in study_groups
+    await pool.query("UPDATE study_groups SET current_members = current_members + 1 WHERE id = ?", [groupId]);
 
     // 3. Get group & user info
-    const [groupData] = await pool.query("SELECT group_name, created_by FROM groups WHERE id = ?", [groupId]);
+    const [groupData] = await pool.query("SELECT group_name, created_by FROM study_groups WHERE id = ?", [groupId]);
     const [member] = await pool.query("SELECT username FROM users WHERE id = ?", [userId]);
 
     const groupName = groupData[0].group_name;
@@ -200,6 +202,30 @@ router.post("/approve", async (req, res) => {
       ...notifMemberRows[0],
       created_at: new Date(notifMemberRows[0].created_at).toISOString()
     });
+
+    // 4b. Send email notification to approved member
+    try {
+      const [memberEmail] = await pool.query("SELECT email FROM users WHERE id = ?", [userId]);
+      if (memberEmail.length > 0) {
+        const emailMessage = `
+          <div style="font-family: Arial, sans-serif; line-height:1.6;">
+            <h2 style="color: #800000;">Crimsons Study Squad</h2>
+            <p>Hi ${memberName},</p>
+            <p>Great news! Your request to join the study group "${groupName}" has been <strong style="color: #008000;">APPROVED</strong>!</p>
+            <p>You can now access the group and start collaborating with other members.</p>
+            <p>Visit your dashboard to see all your approved study groups:</p>
+            <a href="http://localhost:5173/my-study-groups" style="color:#800000; text-decoration:underline; font-weight:bold;">View My Study Groups</a>
+            <br/><br/>
+            <p>– Crimsons Study Squad Team</p>
+          </div>
+        `;
+
+        await sendEmail(memberEmail[0].email, "Your Study Group Was Approved!", emailMessage);
+        console.log(`✅ Approval email sent to: ${memberEmail[0].email}`);
+      }
+    } catch (emailErr) {
+      console.error("Failed to send approval email:", emailErr);
+    }
 
     // 5. Notification to creator
     const [notifCreator] = await pool.query(
@@ -235,7 +261,7 @@ router.post("/decline", async (req, res) => {
     );
 
     // 2. Get group & user info
-    const [groupData] = await pool.query("SELECT group_name, created_by FROM groups WHERE id = ?", [groupId]);
+    const [groupData] = await pool.query("SELECT group_name, created_by FROM study_groups WHERE id = ?", [groupId]);
     const [member] = await pool.query("SELECT username FROM users WHERE id = ?", [userId]);
 
     const groupName = groupData[0].group_name;
@@ -281,7 +307,7 @@ router.post("/decline", async (req, res) => {
 router.get("/pending-members/:creatorId", async (req, res) => {
   const { creatorId } = req.params;
   try {
-    const [groups] = await pool.query("SELECT id FROM groups WHERE created_by = ?", [creatorId]);
+    const [groups] = await pool.query("SELECT id FROM study_groups WHERE created_by = ?", [creatorId]);
     const pending = {};
 
     for (let g of groups) {
@@ -307,13 +333,14 @@ router.get("/my-joined/:userId", async (req, res) => {
   try {
     const [groups] = await pool.query(`
       SELECT g.*, u.first_name, u.last_name
-      FROM groups g
+      FROM study_groups g
       JOIN group_members gm ON g.id = gm.group_id
       JOIN users u ON g.created_by = u.id
       WHERE gm.user_id = ? AND g.status = 'approved'
     `, [userId]);
     res.json({ data: groups });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false });
   }
 });
@@ -324,9 +351,9 @@ router.get("/my-groups/:userId", async (req, res) => {
   try {
     const [groups] = await pool.query(`
       SELECT g.*, u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS creator_name
-      FROM groups g
+      FROM study_groups g
       JOIN users u ON g.created_by = u.id
-      WHERE g.created_by = ?
+      WHERE g.created_by = ? AND g.status = 'approved'
       ORDER BY g.created_at DESC
     `, [userId]);
 
@@ -360,7 +387,7 @@ router.post("/leave", async (req, res) => {
     await pool.query("DELETE FROM group_members WHERE user_id = ? AND group_id = ?", [userId, groupId]);
 
     // Optional: decrement current_members in groups
-    await pool.query("UPDATE groups SET current_members = current_members - 1 WHERE id = ?", [groupId]);
+    await pool.query("UPDATE study_groups SET current_members = current_members - 1 WHERE id = ?", [groupId]);
 
     res.json({ message: "You have left the group successfully." });
   } catch (err) {

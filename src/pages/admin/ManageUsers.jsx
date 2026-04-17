@@ -12,11 +12,17 @@ import {
 } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
 
 export default function ManageUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    userId: null,
+    username: ""
+  });
 
   // Fetch users
   const fetchUsers = async () => {
@@ -36,15 +42,24 @@ export default function ManageUsers() {
   }, []);
 
   // Delete user
-  const deleteUser = async (userId) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+  const deleteUser = async (userId, username) => {
+    setConfirmModal({
+      isOpen: true,
+      userId,
+      username
+    });
+  };
+
+  const confirmDeleteUser = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/user/delete/${userId}`);
+      await axios.delete(`http://localhost:5000/api/user/delete/${confirmModal.userId}`);
       toast.success("User deleted successfully!");
       fetchUsers();
+      setConfirmModal({ isOpen: false, userId: null, username: "" });
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete user");
+      setConfirmModal({ isOpen: false, userId: null, username: "" });
     }
   };
 
@@ -112,15 +127,10 @@ export default function ManageUsers() {
                       View Details
                     </button>
 
-                    {/* Delete button always visible but disabled if active */}
+                    {/* Delete button always enabled for admin */}
                     <button
-                      onClick={() => deleteUser(user.id)}
-                      disabled={user.status === "active"}
-                      className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
-                        user.status === "active"
-                          ? "bg-red-600 text-white opacity-50 cursor-not-allowed"
-                          : "bg-red-600 text-white hover:bg-red-700"
-                      }`}
+                      onClick={() => deleteUser(user.id, user.username)}
+                      className="px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
                     >
                       <TrashIcon className="w-5 h-5" />
                       Delete
@@ -135,7 +145,7 @@ export default function ManageUsers() {
 
       {/* User Details Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl max-w-md w-full relative opacity-95">
             <button
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 font-bold"
@@ -169,6 +179,18 @@ export default function ManageUsers() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, userId: null, username: "" })}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete the user "${confirmModal.username}"? This action cannot be undone.`}
+        confirmText="Delete User"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 }

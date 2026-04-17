@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 
 // Import Database Pool
 import { pool } from "./config/db.js"; 
+import { setIO } from "./utils/admin/socket.js"; 
 
 // Import Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -97,6 +98,9 @@ const io = new IOServer(server, {
 
 app.set("io", io);
 
+// Initialize socket for admin notifications
+setIO(io);
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
@@ -154,6 +158,9 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 }); // <-- this closes io.on("connection")
+
+// Export io instance for use in other modules
+export { io };
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

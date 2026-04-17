@@ -23,7 +23,7 @@ export const createGroup = async (req, res) => {
 
 export const getGroups = async (req, res) => {
   try {
-    const [groups] = await pool.query("SELECT * FROM groups ORDER BY created_at DESC");
+    const [groups] = await pool.query("SELECT * FROM study_groups ORDER BY created_at DESC");
 
     return res.status(200).json({ success: true, groups });
 
