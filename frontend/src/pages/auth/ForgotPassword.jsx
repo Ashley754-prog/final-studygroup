@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import API_BASE_URL from "../config/api.js";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/password/forgot-password", {
+      const res = await fetch(`${API_BASE_URL}/api/password/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { toast } from "react-toastify";
+import API_BASE_URL from "../config/api.js";
 
 export default function CreateAccount() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const handleCreate = async (e) => {
   setLoading(true);
 
   try {
-    const res = await fetch("http://localhost:5000/api/auth", {  // Make sure route is correct!
+    const res = await fetch(`${API_BASE_URL}/api/auth`, {  // Make sure route is correct!
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

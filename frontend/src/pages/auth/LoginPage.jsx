@@ -4,6 +4,7 @@ import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { loginUser } from "../../utils/auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-toastify";
+import API_BASE_URL from "../config/api.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function LoginPage() {
 
       (async () => {
         try {
-          const res = await fetch(`http://localhost:5000/api/auth/check-google?email=${encodeURIComponent(emailFromURL)}`);
+          const res = await fetch(`${API_BASE_URL}/api/auth/check-google?email=${encodeURIComponent(emailFromURL)}`);
           const data = await res.json();
           if (data.isGoogleOnly) {
             toast.error("This account was created using Google Sign-In. You cannot log in with a password. Please use Google login.");
@@ -42,7 +43,7 @@ const handleLogin = async () => {
   setLoading(true);
 
   try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -89,7 +90,7 @@ localStorage.setItem("user", JSON.stringify(userData));
 
   const handleGoogleLogin = async (credentialResponse) => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/google", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken: credentialResponse.credential }),

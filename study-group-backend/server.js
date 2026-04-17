@@ -42,7 +42,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
   credentials: true
 }));
 
@@ -65,8 +65,11 @@ const upload = multer({ storage });
 app.post("/api/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   
-  // Construct public URL
-  const fileUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+  // Use the Backend's own domain instead of localhost:5000
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+  
   res.json({ fileUrl, filename: req.file.originalname });
 });
 
@@ -93,7 +96,7 @@ app.use("/api/announcements", announcementRoutes);
 // === Socket.io Setup ===
 const io = new IOServer(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
