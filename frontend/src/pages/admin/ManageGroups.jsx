@@ -35,7 +35,8 @@ export default function ManageGroups() {
 const fetchGroups = async () => {
   setLoading(true);
   try {
-    const res = await axios.get("http://localhost:5000/api/group/all"); // ← Show ALL
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.get(`${API_BASE_URL}/api/group/all`); // ← Show ALL
     const groupList = Array.isArray(res.data)
       ? res.data
       : res.data?.data || [];
@@ -100,7 +101,8 @@ const handleDecline = async (groupId, groupName) => {
 
 const confirmApprove = async () => {
   try {
-    await axios.patch(`http://localhost:5000/api/admin/approve/${confirmModal.groupId}`);
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    await axios.patch(`${API_BASE_URL}/api/admin/approve/${confirmModal.groupId}`);
     toast.success("Group approved! Creator will receive an email.");
     fetchGroups();
     setConfirmModal({ isOpen: false, groupId: null, action: null, groupName: "" });
@@ -113,7 +115,8 @@ const confirmApprove = async () => {
 
 const submitDecline = async (remarks) => {
   try {
-    await axios.patch(`http://localhost:5000/api/admin/decline/${promptModal.groupId}`, { remarks });
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    await axios.patch(`${API_BASE_URL}/api/admin/decline/${promptModal.groupId}`, { remarks });
     toast.info("Group declined! Creator will receive an email.");
     fetchGroups();
     setPromptModal({ isOpen: false, groupId: null, groupName: "" });

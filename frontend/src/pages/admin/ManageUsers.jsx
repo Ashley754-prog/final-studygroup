@@ -27,7 +27,8 @@ export default function ManageUsers() {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/user/admin-list");
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/user/admin-list`);
       setUsers(res.data || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
@@ -52,7 +53,8 @@ export default function ManageUsers() {
 
   const confirmDeleteUser = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/user/delete/${confirmModal.userId}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.delete(`${API_BASE_URL}/api/user/delete/${confirmModal.userId}`);
       toast.success("User deleted successfully!");
       fetchUsers();
       setConfirmModal({ isOpen: false, userId: null, username: "" });

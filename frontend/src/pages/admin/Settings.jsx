@@ -65,7 +65,8 @@ export default function Settings() {
       }
       
       console.log(`Fetching admin profile for user ID: ${storedUser.id}`);
-      const response = await axios.get(`http://localhost:5000/api/admin/profile/${storedUser.id}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const response = await axios.get(`${API_BASE_URL}/api/admin/profile/${storedUser.id}`);
       const admin = response.data;
       console.log("Admin profile response:", admin);
       
@@ -115,7 +116,8 @@ export default function Settings() {
         two_factor_auth: twoFactor
       };
       
-      await axios.put(`http://localhost:5000/api/admin/profile/${storedUser.id}`, profileData);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.put(`${API_BASE_URL}/api/admin/profile/${storedUser.id}`, profileData);
       
       // Update localStorage user data
       const updatedUser = {
@@ -164,7 +166,8 @@ export default function Settings() {
         newPassword: formData.newPassword
       };
       
-      await axios.put(`http://localhost:5000/api/admin/password/${storedUser.id}`, passwordData);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.put(`${API_BASE_URL}/api/admin/password/${storedUser.id}`, passwordData);
       
       // Reset password fields
       setFormData(prev => ({

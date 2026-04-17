@@ -63,7 +63,8 @@ export default function AdminDashboard() {
   // Fetch dashboard stats
   const fetchStats = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/admin/dashboard");
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/admin/dashboard`);
       setStats(res.data);
     } catch (err) {
       console.error("Failed to fetch dashboard stats:", err);
@@ -73,7 +74,8 @@ export default function AdminDashboard() {
   // Fetch recent activities
   const fetchActivities = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/admin/activities");
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/admin/activities`);
       setActivities(res.data || []);
     } catch (err) {
       console.error("Failed to fetch activities:", err);
