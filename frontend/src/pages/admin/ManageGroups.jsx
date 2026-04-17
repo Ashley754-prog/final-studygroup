@@ -60,7 +60,7 @@ const fetchGroups = async () => {
 useEffect(() => {
   fetchGroups(); // initial load
 
-  const socket = io("https://crimsons-study-squad.up.railway.app");
+  const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
 
   // NEW GROUPS APPEAR INSTANTLY IN PENDING
   socket.on("newPendingGroup", (newGroup) => {

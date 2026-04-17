@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const socket = io("https://crimsons-study-squad.up.railway.app", { transports: ["websocket", "polling"] });
+const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { transports: ["websocket", "polling"] });
 
 export default function UserDashboard() {
   const navigate = useNavigate();

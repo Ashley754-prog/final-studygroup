@@ -132,7 +132,7 @@ export default function JoinViewPage() {
     loadGroup();
 
     // --- Initialize socket ---
-    const socket = io("https://crimsons-study-squad.up.railway.app", { 
+    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { 
       transports: ["websocket", "polling"],
       withCredentials: true 
     });

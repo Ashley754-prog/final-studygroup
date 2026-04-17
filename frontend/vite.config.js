@@ -5,16 +5,16 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  base: './', // Ensures assets are linked relatively
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
   preview: {
-    allowedHosts: [
-      'crimsons-studysquad-production-3f89.up.railway.app',
-      'localhost',
-      '127.0.0.1'
-    ]
+    port: 8080,
+    strictPort: true,
+    host: true,
+    allowedHosts: true // Fixes the "Blocked Host" error
   }
 })

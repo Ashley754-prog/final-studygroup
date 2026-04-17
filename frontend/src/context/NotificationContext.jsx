@@ -13,7 +13,7 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
 
     // Connect to Socket.IO (change URL for production)
-    const sock = io("https://crimsons-study-squad.up.railway.app", { transports: ["websocket", "polling"] });
+    const sock = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { transports: ["websocket", "polling"] });
 
     sock.on("connect", () => {
       sock.emit("join", user.id);

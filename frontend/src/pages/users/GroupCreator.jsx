@@ -75,7 +75,7 @@ useEffect(() => {
   fetchGroups();
   fetchPendingMembers();
 
-  socket = io("https://crimsons-study-squad.up.railway.app");
+  socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
 
   socket.emit("join_creator", currentUserId);
 
