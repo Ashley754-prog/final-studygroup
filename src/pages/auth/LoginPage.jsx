@@ -58,22 +58,24 @@ const userData = {
   email: data.user.email,
   first_name: data.user.first_name,
   last_name: data.user.last_name,
+  is_admin: data.user.is_admin,
+  is_verified: data.user.is_verified,
+  status: data.user.status
 };
 localStorage.setItem("user", JSON.stringify(userData));
 
-    // Check if user is admin and set flag
-    const adminRes = await fetch(`http://localhost:5000/api/auth/user/${userData.id}`);
-    const adminData = await adminRes.json();
-    if (adminData.is_admin) {
-      localStorage.setItem("isAdmin", "true");
-    }
+    console.log("Login userData:", userData);
+    console.log("userData.is_admin:", userData.is_admin);
+    console.log("Type of is_admin:", typeof userData.is_admin);
 
     loginUser(userData, data.token);
 
     // Redirect to admin dashboard if admin, otherwise user dashboard
-    if (adminData.is_admin) {
+    if (userData.is_admin === 1 || userData.is_admin === true) {
+      console.log("Redirecting to admin dashboard");
       navigate("/admin/dashboard");
     } else {
+      console.log("Redirecting to user dashboard");
       navigate("/user-dashboard");
     }
 
@@ -102,23 +104,25 @@ const userData = {
   email: data.user.email,
   first_name: data.user.first_name,
   last_name: data.user.last_name,
+  is_admin: data.user.is_admin,
+  is_verified: data.user.is_verified,
+  status: data.user.status
 };
 
 localStorage.setItem("user", JSON.stringify(userData));
 
-// Check if user is admin and set flag
-const adminRes = await fetch(`http://localhost:5000/api/auth/user/${userData.id}`);
-const adminData = await adminRes.json();
-if (adminData.is_admin) {
-  localStorage.setItem("isAdmin", "true");
-}
+console.log("Google Login userData:", userData);
+console.log("userData.is_admin:", userData.is_admin);
+console.log("Type of is_admin:", typeof userData.is_admin);
 
 loginUser(userData, data.token);
 
 // Redirect to admin dashboard if admin, otherwise user dashboard
-if (adminData.is_admin) {
+if (userData.is_admin === 1 || userData.is_admin === true) {
+  console.log("Redirecting to admin dashboard from Google login");
   navigate("/admin/dashboard");
 } else {
+  console.log("Redirecting to user dashboard from Google login");
   navigate("/user-dashboard");
 }
     } catch (err) {

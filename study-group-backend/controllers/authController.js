@@ -98,6 +98,9 @@ export const googleAuth = async (req, res) => {
         last_name: user.last_name,
         username: user.username,
         email: user.email,
+        is_admin: user.is_admin,
+        is_verified: user.is_verified,
+        status: user.status
       },
     });
   } catch (err) {
@@ -176,7 +179,19 @@ export const login = async (req, res) => {
     if (!user.is_verified) return res.status(400).json({ message: "Account not verified" });
 
     const token = generateToken(user.id);
-    res.status(200).json({ token, user: { id: user.id, username: user.username, email: user.email } });
+    res.status(200).json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        is_admin: user.is_admin,
+        is_verified: user.is_verified,
+        status: user.status
+      } 
+    });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ message: "Server error", error: err.message });

@@ -4,6 +4,11 @@ import {
   UsersIcon,
   ChatBubbleLeftRightIcon,
   FlagIcon,
+  UserPlusIcon,
+  PlusCircleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/solid";
 import axios from "axios";
 
@@ -18,6 +23,42 @@ export default function AdminDashboard() {
     systemStatus: "OK",
   });
   const [activities, setActivities] = useState([]);
+
+  // Helper function to get icon based on action
+  const getActivityIcon = (action) => {
+    switch (action) {
+      case 'registered':
+        return <UserPlusIcon className="w-4 h-4 text-blue-500" />;
+      case 'created':
+        return <PlusCircleIcon className="w-4 h-4 text-green-500" />;
+      case 'approved':
+        return <CheckCircleIcon className="w-4 h-4 text-green-600" />;
+      case 'declined':
+        return <XCircleIcon className="w-4 h-4 text-red-600" />;
+      case 'joined':
+        return <UserGroupIcon className="w-4 h-4 text-purple-500" />;
+      default:
+        return <FlagIcon className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  // Helper function to get action text
+  const getActionText = (action) => {
+    switch (action) {
+      case 'registered':
+        return 'registered';
+      case 'created':
+        return 'created';
+      case 'approved':
+        return 'approved';
+      case 'declined':
+        return 'declined';
+      case 'joined':
+        return 'joined';
+      default:
+        return action;
+    }
+  };
 
   // Fetch dashboard stats
   const fetchStats = async () => {
@@ -130,30 +171,37 @@ export default function AdminDashboard() {
             activities.map((activity, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-3 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center text-maroon text-xs font-bold">
-                    {activity.user_first[0]}
+                  <div className="flex-shrink-0">
+                    {getActivityIcon(activity.action)}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
                       <span className="text-maroon">
                         {activity.user_first} {activity.user_last}
                       </span>{" "}
-                      {activity.action}{" "}
+                      <span className="text-gray-600">
+                        {getActionText(activity.action)}
+                      </span>{" "}
                       {activity.target && (
-                        <span className="font-semibold">"{activity.target}"</span>
+                        <span className="font-semibold text-gray-700">
+                          "{activity.target}"
+                        </span>
                       )}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.created_at).toLocaleDateString([], {
+                        month: 'short',
+                        day: 'numeric',
+                      })} at {new Date(activity.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-gray-500">
-                  {new Date(activity.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
               </div>
             ))
           )}

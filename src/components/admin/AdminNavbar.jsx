@@ -9,8 +9,9 @@ export default function AdminNavbar() {
   const dropdownRef = useRef();
 
   const handleAdminLogout = () => {
-    localStorage.removeItem("isAdmin");
-    navigate("/admin/login");
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   const handleSettings = () => {

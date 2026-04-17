@@ -24,7 +24,6 @@ import TermsPage from "./pages/users/TermsPage.jsx";
 import PoliciesPage from "./pages/users/PoliciesPage.jsx";
 
 // Admin Pages
-import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ManageUsers from "./pages/admin/ManageUsers.jsx";
 import ManageGroups from "./pages/admin/ManageGroups.jsx";
@@ -79,9 +78,6 @@ function App() {
             {/* Dynamic Group View */}
             <Route path="/group/:groupId" element={<JoinViewPage />} />
           </Route>
-
-          {/* ADMIN PUBLIC */}
-          <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* ADMIN PROTECTED ROUTES */}
           <Route

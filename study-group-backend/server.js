@@ -30,6 +30,7 @@ import userRoutes from "./routes/userRoutes.js";
 import notifRoutes from "./routes/notifs.js";
 import announcementRoutes from "./routes/announcements.js";
 import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
+import adminSettingsRoutes from "./routes/admin/adminSettingsRoutes.js";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ app.use("/api/calendar", calendarRoutes);     // schedules / calendar
 app.use("/api/schedules", schedulesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", groupAdminRoutes);
+app.use("/api/admin", adminSettingsRoutes);
 app.use("/api/user", userAdminRoutes);
 app.use("/api/admin/activities", activityRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
