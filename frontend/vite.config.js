@@ -10,4 +10,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    allowedHosts: [
+      'crimsons-studysquad-production-3f89.up.railway.app',
+      'localhost',
+      '127.0.0.1'
+    ]
+  }
 })
