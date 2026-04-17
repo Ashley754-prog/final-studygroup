@@ -73,6 +73,22 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   res.json({ fileUrl, filename: req.file.originalname });
 });
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Study Group Backend API is running!",
+    status: "active",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: "/api/auth",
+      groups: "/api/group",
+      calendar: "/api/calendar",
+      admin: "/api/admin",
+      users: "/api/users"
+    }
+  });
+});
+
 // Mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", googleRoutes);
