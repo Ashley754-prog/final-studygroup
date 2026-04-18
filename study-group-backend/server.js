@@ -31,6 +31,7 @@ import notifRoutes from "./routes/notifs.js";
 import announcementRoutes from "./routes/announcements.js";
 import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
 import adminSettingsRoutes from "./routes/admin/adminSettingsRoutes.js";
+import tempFixRoutes from "./routes/temp-fix.js";
 
 dotenv.config();
 
@@ -109,6 +110,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifs", notifRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/temp", tempFixRoutes);
 
 // === Socket.io Setup ===
 const io = new IOServer(server, {
