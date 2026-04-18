@@ -248,8 +248,9 @@ const handleFileUpload = async (e) => {
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return toast.error("Invalid start or end date/time!");
+    }
 
-  try {
+    try {
     const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const payload = {
       title,
@@ -260,10 +261,6 @@ const handleFileUpload = async (e) => {
       meetingType,
       meetingLink: meetingType === "online" ? meetingLink : null
     };
-        description,
-        meetingType,
-        meetingLink: meetingType === "online" ? meetingLink : null
-      };
 
       const res = await axios.post(
         `${API_BASE_URL}/api/calendar/group/${groupId}`,
