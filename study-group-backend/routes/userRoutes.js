@@ -53,7 +53,9 @@ router.get("/me", verifyToken, async (req, res) => {
     console.log("Full user fetched:", user);
 
     if (user.profile_photo) {
-      user.profile_photo = `http://localhost:5000/uploads/profile_photos/${user.profile_photo}`;
+      const protocol = req.protocol;
+      const host = req.get('host');
+      user.profile_photo = `${protocol}://${host}/uploads/profile_photos/${user.profile_photo}`;
     }
 
     res.json(user);
@@ -95,7 +97,9 @@ router.put("/me", verifyToken, upload.single("profile_photo"), async (req, res) 
 
     const updatedUser = updatedResults[0];
     if (updatedUser.profile_photo) {
-      updatedUser.profile_photo = `http://localhost:5000/uploads/profile_photos/${updatedUser.profile_photo}`;
+      const protocol = req.protocol;
+      const host = req.get('host');
+      updatedUser.profile_photo = `${protocol}://${host}/uploads/profile_photos/${updatedUser.profile_photo}`;
     }
 
     res.json(updatedUser);

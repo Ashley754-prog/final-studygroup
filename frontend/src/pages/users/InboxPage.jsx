@@ -33,7 +33,8 @@ export default function InboxPage() {
     if (!userId) return;
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/notifs/${userId}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/notifs/${userId}`);
       const data = res.data || [];
       setMessages(data);
       setUnreadCount(data.filter(n => !n.is_read && !n.is_archived && !n.is_deleted).length);
@@ -65,7 +66,8 @@ export default function InboxPage() {
   const markRead = async (notif) => {
     if (!notif || notif.is_read) return;
     try {
-      await axios.patch(`http://localhost:5000/api/notifs/${notif.id}/read`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.patch(`${API_BASE_URL}/api/notifs/${notif.id}/read`);
       setMessages(prev => prev.map(m => m.id === notif.id ? { ...m, is_read: 1 } : m));
       setUnreadCount(prev => prev - 1);
     } catch (err) { console.error(err); }
@@ -73,14 +75,16 @@ export default function InboxPage() {
 
   const toggleStar = async (id, current) => {
     try {
-      await axios.patch(`http://localhost:5000/api/notifs/${id}/star`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.patch(`${API_BASE_URL}/api/notifs/${id}/star`);
       setMessages(prev => prev.map(m => m.id === id ? { ...m, is_starred: !current } : m));
     } catch (err) { toast.error("Failed"); }
   };
 
   const toggleArchive = async (id, current) => {
     try {
-      await axios.patch(`http://localhost:5000/api/notifs/${id}/archive`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.patch(`${API_BASE_URL}/api/notifs/${id}/archive`);
       setMessages(prev => prev.map(m => m.id === id ? { ...m, is_archived: !current } : m));
       if (selected?.id === id) setSelected(null);
     } catch (err) { toast.error("Failed"); }
@@ -88,7 +92,8 @@ export default function InboxPage() {
 
   const deleteNotification = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/notifs/${id}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.delete(`${API_BASE_URL}/api/notifs/${id}`);
       setMessages(prev => prev.filter(m => m.id !== id));
       if (selected?.id === id) setSelected(null);
     } catch (err) { toast.error("Failed"); }
@@ -97,7 +102,8 @@ export default function InboxPage() {
   // ✅ Approve join request
   const approveRequest = async (notif) => {
     try {
-      await axios.post("http://localhost:5000/api/group/approve", {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.post(`${API_BASE_URL}/api/group/approve`, {
         groupId: notif.related_id,
         userId: notif.requester_id
       });
@@ -105,8 +111,8 @@ export default function InboxPage() {
       toast.success("Member approved!");
 
       // Mark creator's notification as read & archived
-      await axios.patch(`http://localhost:5000/api/notifs/${notif.id}/read`);
-      await axios.patch(`http://localhost:5000/api/notifs/${notif.id}/archive`);
+      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/read`);
+      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/archive`);
       setMessages(prev => prev.map(m => m.id === notif.id ? { ...m, is_read: 1, is_archived: 1 } : m));
 
     } catch (err) {
@@ -118,15 +124,16 @@ export default function InboxPage() {
   // ✅ Decline join request
   const declineRequest = async (notif) => {
     try {
-      await axios.post("http://localhost:5000/api/group/decline", {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.post(`${API_BASE_URL}/api/group/decline`, {
         groupId: notif.related_id,
         userId: notif.requester_id
       });
 
       toast.success("Request declined!");
 
-      await axios.patch(`http://localhost:5000/api/notifs/${notif.id}/read`);
-      await axios.patch(`http://localhost:5000/api/notifs/${notif.id}/archive`);
+      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/read`);
+      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/archive`);
       setMessages(prev => prev.map(m => m.id === notif.id ? { ...m, is_read: 1, is_archived: 1 } : m));
     } catch (err) {
       console.error(err);
