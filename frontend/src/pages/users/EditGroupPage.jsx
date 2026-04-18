@@ -29,7 +29,8 @@ export default function EditGroupPage() {
 
     const fetchGroup = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/group/${groupId}`);
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const res = await axios.get(`${API_BASE_URL}/api/group/${groupId}`);
         const data = res.data.data;
 
         if (!data) {
@@ -83,7 +84,8 @@ const handleSubmit = async (e) => {
     };
 
     // PUT request to update group
-    const res = await axios.put(`http://localhost:5000/api/group/${groupId}`, payload);
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.put(`${API_BASE_URL}/api/group/${groupId}`, payload);
 
     if (res.data.success) {
       toast.success("Group updated! Waiting for admin approval.");

@@ -25,8 +25,9 @@ const fetchGroups = async () => {
   if (!currentUserId) return;
 
   try {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const [allRes] = await Promise.all([
-      axios.get("http://localhost:5000/api/group/all")
+      axios.get(`${API_BASE_URL}/api/group/all`)
     ]);
 
     const allGroups = allRes.data.data || [];
@@ -61,7 +62,8 @@ const fetchGroups = async () => {
   const fetchPendingMembers = async () => {
     if (!currentUserId) return;
     try {
-      const res = await axios.get(`http://localhost:5000/api/group/pending-members/${currentUserId}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${API_BASE_URL}/api/group/pending-members/${currentUserId}`);
       // Expected response: { groupId: [{userId, username}, ...], ... }
       setPendingMembersMap(res.data.data || {});
     } catch (err) {
@@ -104,7 +106,8 @@ useEffect(() => {
 
 const handleApproveMember = async (groupId, user) => {
   try {
-    await axios.post(`http://localhost:5000/api/group/${groupId}/approve`, { userId: user.userId });
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    await axios.post(`${API_BASE_URL}/api/group/${groupId}/approve`, { userId: user.userId });
     toast.success(`${user.username} has been approved!`);
     fetchPendingMembers();
     socket.emit("request_approved", {
@@ -120,7 +123,8 @@ const handleApproveMember = async (groupId, user) => {
 
 const handleDeclineMember = async (groupId, user) => {
   try {
-    await axios.post(`http://localhost:5000/api/group/${groupId}/decline`, { userId: user.userId });
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    await axios.post(`${API_BASE_URL}/api/group/${groupId}/decline`, { userId: user.userId });
     toast.info(`${user.username} has been declined.`);
     fetchPendingMembers();
     socket.emit("request_declined", { userId: user.userId, groupId });
