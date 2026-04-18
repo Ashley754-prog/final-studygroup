@@ -32,8 +32,12 @@ export const createGroupSchedule = async (req, res) => {
   }
 
   try {
-    const startISO = new Date(start).toISOString();
-    const endISO = new Date(end).toISOString();
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    // Convert to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+    const startISO = startDate.toISOString().slice(0, 19).replace('T', ' ');
+    const endISO = endDate.toISOString().slice(0, 19).replace('T', ' ');
 
     // Generate a simple meeting link for online meetings (without Google Calendar)
     let meetingLink = null;
