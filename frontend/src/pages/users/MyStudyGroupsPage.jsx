@@ -1,28 +1,34 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { UserGroupIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 export default function MyStudyGroupsPage() {
   const [groups, setGroups] = useState([]);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  // Check if user is a group creator (has created groups)
+  const [isGroupCreator, setIsGroupCreator] = useState(false);
+
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        // Fetch groups the user joined
+        // Fetch groups user joined
         const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const joinedRes = await axios.get(
           `${API_BASE_URL}/api/group/my-joined/${user.id}`
         );
         const joinedGroups = joinedRes.data.data || [];
 
-        // Fetch groups the user created
+        // Fetch groups user created
         const createdRes = await axios.get(
           `${API_BASE_URL}/api/group/my-groups/${user.id}`
         );
         const createdGroups = createdRes.data.data || [];
+
+        // Check if user has created any groups
+        setIsGroupCreator(createdGroups.length > 0);
 
         // Merge, avoid duplicates
         const allGroups = [...joinedGroups];
@@ -49,6 +55,15 @@ export default function MyStudyGroupsPage() {
             <UserGroupIcon className="w-7 h-7 text-gold" />
             My Study Groups
           </h1>
+          {isGroupCreator && (
+            <button
+              onClick={() => navigate("/group-creator")}
+              className="flex items-center gap-2 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              Manage My Groups
+            </button>
+          )}
         </div>
 
         {groups.length === 0 ? (
