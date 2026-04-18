@@ -63,10 +63,10 @@ export const createGroupSchedule = async (req, res) => {
       meetingLink
     };
 
-    // Emit to group except sender
+    // Emit to group
     const io = req.app.get("io");
     if (io) {
-      io.to(`group_${groupId}`).except(req.socket.id).emit("new_schedule", newSchedule);
+      io.to(`group_${groupId}`).emit("new_schedule", newSchedule);
     }
 
     res.status(201).json({ success: true, schedule: newSchedule });
