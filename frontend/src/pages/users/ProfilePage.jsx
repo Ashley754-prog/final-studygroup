@@ -34,6 +34,11 @@ useEffect(() => {
       setOriginalUser(res.data);
       setPhotoPreview(res.data.profile_photo || null);
       
+      // Update user object in localStorage
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const updatedUser = { ...currentUser, ...res.data };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
       // Save profile photo to localStorage for navbar
       if (res.data.profile_photo) {
         localStorage.setItem("userProfilePhoto", res.data.profile_photo);
@@ -86,6 +91,11 @@ const handleSave = async () => {
     setOriginalUser(res.data);
     setPhotoPreview(res.data.profile_photo || null);
     delete user.newPhotoFile;
+
+    // Update user object in localStorage with new data
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const updatedUser = { ...currentUser, ...res.data };
+    localStorage.setItem("user", JSON.stringify(updatedUser));
 
     // Save profile photo to localStorage for navbar
     if (res.data.profile_photo) {
