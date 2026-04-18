@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useRealtime } from "../context/RealtimeContext.jsx";
+import { useRealtime } from "../../context/RealtimeContext";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
