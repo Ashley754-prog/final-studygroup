@@ -167,6 +167,29 @@ router.post("/join", async (req, res) => {
   }
 });
 
+// GET SINGLE GROUP BY ID
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const [group] = await pool.query(`
+      SELECT g.*, u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS creator_name
+      FROM study_groups g
+      JOIN users u ON g.created_by = u.id
+      WHERE g.id = ?
+    `, [id]);
+    
+    if (!group.length) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    
+    res.json({ data: group[0] });
+  } catch (err) {
+    console.error("Get group error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET member status
 router.get("/member-status/:groupId/:userId", async (req, res) => {
   const { groupId, userId } = req.params;
