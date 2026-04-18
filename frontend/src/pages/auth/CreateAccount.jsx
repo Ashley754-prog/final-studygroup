@@ -111,10 +111,9 @@ const handleCreate = async (e) => {
             <input
               type="text"
               name="middle_name"
-              placeholder="Middle Name"
+              placeholder="Middle Name (Optional)"
               value={formData.middle_name}
               onChange={handleChange}
-              required
               className="w-full p-2 rounded bg-gray-200 focus:ring-1 focus:ring-maroon"
             />
 
