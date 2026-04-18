@@ -56,8 +56,7 @@ export default function JoinViewPage() {
 
     const loadGroup = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const allGroupsRes = await axios.get(`${API_BASE_URL}/api/group/all`);
+        const allGroupsRes = await axios.get("${API_BASE_URL}/api/group/all");
         const foundGroup = allGroupsRes.data.data.find(g => g.id === parseInt(groupId));
 
         if (!foundGroup) {
@@ -70,7 +69,6 @@ export default function JoinViewPage() {
         // Check if approved
         let status = "none";
         try {
-          const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
           const joinedRes = await axios.get(`${API_BASE_URL}/api/group/my-joined/${userId}`);
           const joinedIds = joinedRes.data.data?.map(g => g.id) || [];
           if (joinedIds.includes(parseInt(groupId))) status = "approved";
@@ -78,7 +76,10 @@ export default function JoinViewPage() {
 
         if (status !== "approved") {
           try {
-            const pendingRes = await axios.get(`${API_BASE_URL}/api/group/pending-members-for-user`, { params: { userId } });
+            const pendingRes = await axios.get(
+              "${API_BASE_URL}/api/group/pending-members-for-user",
+              { params: { userId } }
+            );
             const pendingIds = pendingRes.data.data || [];
             if (pendingIds.includes(parseInt(groupId))) status = "pending";
           } catch {}
@@ -90,7 +91,6 @@ export default function JoinViewPage() {
         if (status === "approved" || foundGroup.created_by === userId) {
           // --- Messages ---
           try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             const msgRes = await axios.get(`${API_BASE_URL}/api/messages/${groupId}/messages`);
             const mappedMsgs = msgRes.data.messages.map(m => ({
               ...m,
@@ -101,7 +101,6 @@ export default function JoinViewPage() {
 
           // --- Events ---
           try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             const schedRes = await axios.get(`${API_BASE_URL}/api/calendar/group/${groupId}`);
             const schedules = schedRes.data.schedules || [];
             setEvents(schedules.map(s => ({
@@ -116,7 +115,6 @@ export default function JoinViewPage() {
 
           // --- Announcements ---
           try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             const annRes = await axios.get(`${API_BASE_URL}/api/announcements/group/${groupId}`);
             setAnnouncements(annRes.data.announcements || []);
           } catch (err) {
@@ -134,7 +132,7 @@ export default function JoinViewPage() {
     loadGroup();
 
     // --- Initialize socket ---
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { 
+    const socket = io(import.meta.env.VITE_API_URL || "${API_BASE_URL}", { 
       transports: ["websocket", "polling"],
       withCredentials: true 
     });
@@ -208,8 +206,7 @@ const handleFileUpload = async (e) => {
   formData.append("file", file);
 
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const res = await axios.post(`${API_BASE_URL}/api/upload`, formData);
+    const res = await axios.post("${API_BASE_URL}/api/upload", formData);
     const msg = {
       groupId: parseInt(groupId),
       sender: userId,
@@ -229,7 +226,6 @@ const handleFileUpload = async (e) => {
   // --- Join group ---
   const handleJoinGroup = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       await axios.post(`${API_BASE_URL}/api/group/join`, { groupId: parseInt(groupId), userId });
       setUserStatus("pending");
       toast.success("Join request sent! Waiting for creator approval.");
@@ -263,18 +259,19 @@ const handleFileUpload = async (e) => {
         start: startDate.toISOString(),
         end: endDate.toISOString(),
         location: meetingType === "physical" ? location : "Online",
+        description,
+        meetingType,
+        meetingLink: meetingType === "online" ? meetingLink : null
+      };
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const res = await axios.post(
-      `${API_BASE_URL}/api/calendar/group/${groupId}`,
-      payload
-    );
+      const res = await axios.post(
+        `${API_BASE_URL}/api/calendar/group/${groupId}`,
+        payload
+      );
 
-    const newEvent = res.data.schedule;
-    socketRef.current.emit("schedule_created", { ...newEvent, groupId: parseInt(groupId) });
+      const newEvent = res.data.schedule;
+      socketRef.current.emit("schedule_created", { ...newEvent, groupId: parseInt(groupId) });
 
-    setTitle(""); setStart(""); setEnd(""); setLocation(""); setDescription(""); setMeetingType("physical"); setMeetingLink(newEvent.meetingLink || "");
-    setShowModal(false);
       setTitle(""); setStart(""); setEnd(""); setLocation(""); setDescription(""); setMeetingType("physical"); setMeetingLink(newEvent.meetingLink || "");
       setShowModal(false);
 
@@ -292,8 +289,7 @@ const handleFileUpload = async (e) => {
 
   const handlePostAnnouncement = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.post(`${API_BASE_URL}/api/announcements/create", {
+      await axios.post("${API_BASE_URL}/api/announcements/create", {
         groupId: group.id,
         userId: currentUser.id,
         title: announceTitle,
@@ -369,8 +365,7 @@ return (
                         onClick={async () => {
                           closeToast();
                           try {
-                            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-                            await axios.post(`${API_BASE_URL}/api/group/leave", {
+                            await axios.post("${API_BASE_URL}/api/group/leave", {
                               userId: currentUser.id,
                               groupId: group.id,
                             });
