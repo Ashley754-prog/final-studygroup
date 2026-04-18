@@ -98,9 +98,9 @@ export const googleAuth = async (req, res) => {
         last_name: user.last_name,
         username: user.username,
         email: user.email,
-        is_admin: user.is_admin,
-        is_verified: user.is_verified,
-        status: user.status
+        is_admin: user.is_admin || 0, // Default to 0 if undefined
+        is_verified: user.is_verified || 1, // Default to 1 if undefined
+        status: user.status || 'active' // Default to active if undefined
       },
     });
   } catch (err) {
@@ -211,9 +211,9 @@ export const login = async (req, res) => {
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        is_admin: user.is_admin,
-        is_verified: user.is_verified,
-        status: user.status
+        is_admin: user.is_admin || 0, // Default to 0 if undefined
+        is_verified: user.is_verified || 1, // Default to 1 if undefined
+        status: user.status || 'active' // Default to active if undefined
       } 
     });
   } catch (err) {
