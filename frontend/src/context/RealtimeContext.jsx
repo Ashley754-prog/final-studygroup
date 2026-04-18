@@ -23,7 +23,9 @@ export const RealtimeProvider = ({ children }) => {
 
     sock.on("connect", () => {
       console.log("Connected to real-time server");
-      sock.emit("join", user.id);
+      if (user && user.id) {
+        sock.emit("join", user.id);
+      }
     });
 
     sock.on("disconnect", () => {
@@ -58,7 +60,7 @@ export const RealtimeProvider = ({ children }) => {
 
     // Join request updates
     socket.on("join_request_sent", (data) => {
-      if (data.requester_id === currentUser.id) {
+      if (currentUser && data.requester_id === currentUser.id) {
         toast.success("Join request sent! Waiting for approval.");
       } else {
         toast.info(`${data.requester_name} wants to join "${data.group_name}"`);
@@ -67,7 +69,7 @@ export const RealtimeProvider = ({ children }) => {
     });
 
     socket.on("join_request_approved", (data) => {
-      if (data.user_id === currentUser.id) {
+      if (currentUser && data.user_id === currentUser.id) {
         toast.success(`Your request to join "${data.group_name}" was approved!`);
       } else {
         toast.info(`${data.user_name} joined "${data.group_name}"`);
@@ -76,7 +78,7 @@ export const RealtimeProvider = ({ children }) => {
     });
 
     socket.on("join_request_declined", (data) => {
-      if (data.user_id === currentUser.id) {
+      if (currentUser && data.user_id === currentUser.id) {
         toast.error(`Your request to join "${data.group_name}" was declined.`);
       }
       window.dispatchEvent(new CustomEvent('join_request_declined', { detail: data }));
