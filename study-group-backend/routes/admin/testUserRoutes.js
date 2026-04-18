@@ -27,10 +27,8 @@ router.post("/create-test-user", async (req, res) => {
         password, 
         bio, 
         profile_photo, 
-        is_verified, 
-        created_at, 
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        is_verified
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         'Minty',
         'Super', 
@@ -40,7 +38,7 @@ router.post("/create-test-user", async (req, res) => {
         hashedPassword,
         'Test user for user-to-user interactions',
         null,
-        1, // is_verified = true (approved)
+        1
       ]
     );
     
