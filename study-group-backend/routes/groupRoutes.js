@@ -146,6 +146,20 @@ router.post("/join", async (req, res) => {
       created_at: new Date().toISOString()
     });
 
+    // Emit real-time event
+    if (io) {
+      // Get group details for the notification
+      const [groupData] = await pool.query("SELECT group_name FROM groups WHERE id = ?", [groupId]);
+      const [userData] = await pool.query("SELECT username FROM users WHERE id = ?", [userId]);
+      
+      io.emit("join_request_sent", {
+        group_id: groupId,
+        group_name: groupData[0]?.group_name || "Unknown Group",
+        requester_id: userId,
+        requester_name: userData[0]?.username || "Unknown User"
+      });
+    }
+
     res.json({ message: "Join request sent!" });
   } catch (err) {
     console.error(err);

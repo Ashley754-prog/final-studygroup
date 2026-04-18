@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { RealtimeProvider } from "./context/RealtimeContext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
 
 // Auth Pages
 import LoginPage from "./pages/auth/LoginPage.jsx";
@@ -36,27 +38,30 @@ import AdminPrivateRoute from "./routes/AdminPrivateRoute.jsx";
 
 function App() {
   return (
-    <>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+    <RealtimeProvider>
+      <NotificationProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
 
-      <Router>
-        <Routes>
-          {/* PUBLIC AUTH ROUTES */}
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/register" element={<CreateAccount />} />
-          <Route path="/verify" element={<VerificationPage />} />
-          <Route path="/login" element={<LoginPage />} />
+        <Router>
+          <Routes>
+            {/* PUBLIC AUTH ROUTES */}
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/register" element={<CreateAccount />} />
+            <Route path="/verify" element={<VerificationPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
@@ -112,7 +117,8 @@ function App() {
           } />
         </Routes>
       </Router>
-    </>
+    </NotificationProvider>
+  </RealtimeProvider>
   );
 }
 

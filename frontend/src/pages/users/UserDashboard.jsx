@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { io } from "socket.io-client";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useRealtime } from "../context/RealtimeContext.jsx";
+import { useRealtimeUpdates } from "../hooks/useRealtimeUpdates.js";
 
 const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { transports: ["websocket", "polling"] });
 
 export default function UserDashboard() {
   const navigate = useNavigate();
+  const { socket } = useRealtime();
 
   // TEMP: hardcoded current user ID
   const currentUserId = 25;
@@ -58,6 +60,13 @@ export default function UserDashboard() {
     fetchGroups();
   }, []);
 
+  // Real-time updates for group changes
+  useRealtimeUpdates(fetchGroups, [
+    'group_created', 'group_updated', 'group_deleted',
+    'join_request_sent', 'join_request_approved', 'join_request_declined',
+    'user_left_group'
+  ]);
+
   // Listen for approval notifications via socket
   useEffect(() => {
     socket.on("request_approved", data => {
@@ -86,11 +95,11 @@ const handleJoinGroup = async (groupId) => {
       userId
     });
 
-if (res.data.success) {
+if (res.status === 200) {
   toast.success("Join request sent! Waiting for creator approval.");
   setPendingRequests(prev => [...prev, groupId]); // ← ADD THIS LINE
 } else {
-      toast.error(res.data.message); // e.g., "You are already in this group"
+      toast.error(res.data.message || "Failed to join group"); // e.g., "You are already in this group"
     }
   } catch (err) {
     console.error("Failed to join group:", err);
