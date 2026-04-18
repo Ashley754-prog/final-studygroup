@@ -7,8 +7,6 @@ import { useRealtime } from "../../context/RealtimeContext";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const { socket } = useRealtime();
-
   // TEMP: hardcoded current user ID
   const currentUserId = 25;
 
@@ -60,18 +58,8 @@ export default function UserDashboard() {
   // Real-time updates are handled via RealtimeContext
   // The socket events in RealtimeContext will automatically trigger refreshes
 
-  // Listen for approval notifications via socket
-  useEffect(() => {
-    socket.on("request_approved", data => {
-      if (data.userId === currentUserId) {
-        toast.success(`Your request to join "${data.groupName}" was approved!`);
-        setJoinedGroups(prev => [...prev, data.groupId]);
-        setPendingRequests(prev => prev.filter(id => id !== data.groupId));
-      }
-    });
-
-    return () => socket.off("request_approved");
-  }, []);
+  // Real-time updates are handled via RealtimeContext
+  // No direct socket usage needed here
 
   // Join group
 const handleJoinGroup = async (groupId) => {
