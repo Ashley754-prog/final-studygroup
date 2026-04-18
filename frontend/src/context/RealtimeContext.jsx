@@ -32,10 +32,18 @@ export const RealtimeProvider = ({ children }) => {
       console.log("Disconnected from real-time server");
     });
 
+    sock.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    sock.on("error", (error) => {
+      console.error("Socket error:", error);
+    });
+
     setSocket(sock);
 
     return () => sock.disconnect();
-  }, []);
+  }, [socket, currentUser]);
 
   // Real-time event listeners
   useEffect(() => {
