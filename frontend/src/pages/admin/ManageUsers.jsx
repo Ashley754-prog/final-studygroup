@@ -13,6 +13,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
+import { useRealtime } from "../../context/RealtimeContext";
 
 export default function ManageUsers() {
   const [users, setUsers] = useState([]);
@@ -41,6 +42,37 @@ export default function ManageUsers() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Real-time updates using RealtimeContext
+  const { socket } = useRealtime();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // USER UPDATES
+    socket.on("user_created", (newUser) => {
+      toast.success(`New user created: ${newUser.username}`);
+      fetchUsers();
+    });
+
+    socket.on("user_updated", (data) => {
+      toast.info(`User "${data.username}" updated`);
+      fetchUsers();
+    });
+
+    socket.on("user_deleted", (data) => {
+      toast.info(`User "${data.username}" deleted`);
+      fetchUsers();
+    });
+
+    return () => {
+      if (socket) {
+        socket.off("user_created");
+        socket.off("user_updated");
+        socket.off("user_deleted");
+      }
+    };
+  }, [socket]);
 
   // Delete user
   const deleteUser = async (userId, username) => {

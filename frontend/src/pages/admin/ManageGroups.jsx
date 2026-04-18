@@ -1,24 +1,19 @@
 // src/pages/admin/ManageGroups.jsx
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { io } from "socket.io-client";
-import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
+import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
 import PromptModal from "../../components/admin/PromptModal.jsx";
+import { useRealtime } from "../../context/RealtimeContext";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const [expandedSections, setExpandedSections] = useState({
-    pending: true,
-    approved: false,
-    declined: false,
-  });
-
+  
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     groupId: null,
@@ -60,8 +55,13 @@ const fetchGroups = async () => {
 
 useEffect(() => {
   fetchGroups(); // initial load
+}, []);
 
-  const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000");
+// Real-time updates using RealtimeContext
+const { socket } = useRealtime();
+
+useEffect(() => {
+  if (!socket) return;
 
   // NEW GROUPS APPEAR INSTANTLY IN PENDING
   socket.on("newPendingGroup", (newGroup) => {
@@ -74,13 +74,24 @@ useEffect(() => {
     });
   });
 
-  // When any admin approves/declines — refresh everyone
+  // GROUP STATUS CHANGES (approve/decline)
+  socket.on("group_updated", (data) => {
+    toast.info(`Group "${data.group_name}" updated`);
+    fetchGroups();
+  });
+
   socket.on("groupStatusChanged", () => {
     fetchGroups();
   });
 
-  return () => socket.disconnect();
-}, []);
+  return () => {
+    if (socket) {
+      socket.off("newPendingGroup");
+      socket.off("group_updated");
+      socket.off("groupStatusChanged");
+    }
+  };
+}, [socket]);
 
 const handleApprove = async (groupId, groupName) => {
   setConfirmModal({
@@ -148,47 +159,15 @@ const submitDecline = async (remarks) => {
   const approved = filteredGroups.filter((g) => g.status === "approved");
   const declined = filteredGroups.filter((g) => g.status === "declined");
 
-  const renderRows = (groupArray, status) => {
-    if (!expandedSections[status]) return null;
-    return groupArray.map((group) => (
-      <tr key={group.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
-        <td className="px-6 py-4">{group.group_name}</td>
-        <td className="px-6 py-4">{group.course} • {group.location}</td>
-        <td className="px-6 py-4">{group.creator_name || group.created_by}</td>
-        <td className="px-6 py-4">{group.current_members || 0} / {group.size}</td>
-        <td className="px-6 py-4">
-          {group.status === "pending" && <span className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">Pending</span>}
-          {group.status === "approved" && <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">Approved</span>}
-          {group.status === "declined" && <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">Declined</span>}
-          {group.status === "declined" && group.remarks && <p className="text-sm text-red-500 mt-1">Remark: {group.remarks}</p>}
-        </td>
-        <td className="px-6 py-4 flex justify-center gap-2">
-          {group.status === "pending" && (
-            <>
-              <button onClick={() => handleApprove(group.id, group.group_name)} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition">
-                <CheckCircleIcon className="w-4 h-4" /> Approve
-              </button>
-              <button onClick={() => handleDecline(group.id, group.group_name)} className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition">
-                <XCircleIcon className="w-4 h-4" /> Decline
-              </button>
-            </>
-          )}
-          {group.status === "approved" && <span className="text-green-700 font-medium">✔</span>}
-          {group.status === "declined" && <span className="text-red-700 font-medium">✖</span>}
-        </td>
-      </tr>
-    ));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-maroon mb-4 flex items-center gap-3">
+        <h1 className="text-4xl font-bold text-maroon mb-6 flex items-center gap-3">
           <UsersIcon className="w-10 h-10" /> Manage Study Groups
         </h1>
 
         {/* Search / Filter */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-6 flex items-center gap-3">
           <input
             type="text"
             placeholder="Search by group, course, location, or creator..."
@@ -201,46 +180,169 @@ const submitDecline = async (remarks) => {
           </button>
         </div>
 
-        <table className="min-w-full bg-white border border-gray-200 rounded-xl shadow overflow-hidden">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="text-left px-6 py-3 font-semibold text-gray-700">Group Name</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-700">Course / Location</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-700">Status</th>
-              <th className="text-center px-6 py-3 font-semibold text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Pending Section */}
-            <tr className="bg-gray-50 cursor-pointer" onClick={() => toggleSection("pending")}>
-              <td colSpan={6} className="px-6 py-3 font-semibold text-yellow-800 flex justify-between items-center">
+        <div className="space-y-8">
+          {/* Pending Groups Table */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-yellow-50 px-6 py-4 border-b border-yellow-200">
+              <h2 className="text-xl font-bold text-yellow-800 flex items-center gap-2">
+                <ClockIcon className="w-6 h-6" />
                 Pending Approval ({pending.length})
-                {expandedSections.pending ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-              </td>
-            </tr>
-            {renderRows(pending, "pending")}
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Group Name</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Course</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Location</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
+                    <th className="text-center px-6 py-3 font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pending.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No pending groups
+                      </td>
+                    </tr>
+                  ) : (
+                    pending.map((group) => (
+                      <tr key={group.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 font-medium">{group.group_name}</td>
+                        <td className="px-6 py-4">{group.course}</td>
+                        <td className="px-6 py-4">{group.location}</td>
+                        <td className="px-6 py-4">{group.creator_name || group.created_by}</td>
+                        <td className="px-6 py-4">{group.current_members || 0} / {group.size}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-2">
+                            <button 
+                              onClick={() => handleApprove(group.id, group.group_name)} 
+                              className="bg-green-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition text-sm"
+                            >
+                              <CheckCircleIcon className="w-4 h-4" /> Approve
+                            </button>
+                            <button 
+                              onClick={() => handleDecline(group.id, group.group_name)} 
+                              className="bg-red-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition text-sm"
+                            >
+                              <XCircleIcon className="w-4 h-4" /> Decline
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            {/* Approved Section */}
-            <tr className="bg-gray-50 cursor-pointer" onClick={() => toggleSection("approved")}>
-              <td colSpan={6} className="px-6 py-3 font-semibold text-green-800 flex justify-between items-center">
-                Approved ({approved.length})
-                {expandedSections.approved ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-              </td>
-            </tr>
-            {renderRows(approved, "approved")}
+          {/* Approved Groups Table */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-green-50 px-6 py-4 border-b border-green-200">
+              <h2 className="text-xl font-bold text-green-800 flex items-center gap-2">
+                <CheckCircleIcon className="w-6 h-6" />
+                Approved Groups ({approved.length})
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Group Name</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Course</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Location</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
+                    <th className="text-center px-6 py-3 font-semibold text-gray-700">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {approved.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No approved groups
+                      </td>
+                    </tr>
+                  ) : (
+                    approved.map((group) => (
+                      <tr key={group.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 font-medium">{group.group_name}</td>
+                        <td className="px-6 py-4">{group.course}</td>
+                        <td className="px-6 py-4">{group.location}</td>
+                        <td className="px-6 py-4">{group.creator_name || group.created_by}</td>
+                        <td className="px-6 py-4">{group.current_members || 0} / {group.size}</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
+                            Approved
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            {/* Declined Section */}
-            <tr className="bg-gray-50 cursor-pointer" onClick={() => toggleSection("declined")}>
-              <td colSpan={6} className="px-6 py-3 font-semibold text-red-800 flex justify-between items-center">
-                Declined ({declined.length})
-                {expandedSections.declined ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-              </td>
-            </tr>
-            {renderRows(declined, "declined")}
-          </tbody>
-        </table>
+          {/* Declined Groups Table */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-red-50 px-6 py-4 border-b border-red-200">
+              <h2 className="text-xl font-bold text-red-800 flex items-center gap-2">
+                <XCircleIcon className="w-6 h-6" />
+                Declined Groups ({declined.length})
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Group Name</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Course</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Location</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {declined.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No declined groups
+                      </td>
+                    </tr>
+                  ) : (
+                    declined.map((group) => (
+                      <tr key={group.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td className="px-6 py-4 font-medium">{group.group_name}</td>
+                        <td className="px-6 py-4">{group.course}</td>
+                        <td className="px-6 py-4">{group.location}</td>
+                        <td className="px-6 py-4">{group.creator_name || group.created_by}</td>
+                        <td className="px-6 py-4">{group.current_members || 0} / {group.size}</td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-bold">
+                              Declined
+                            </span>
+                            {group.remarks && (
+                              <p className="text-sm text-red-600 mt-2 italic">
+                                <strong>Reason:</strong> {group.remarks}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
       {/* Approval Confirmation Modal */}
       <ConfirmModal
