@@ -90,11 +90,7 @@ export default function Navbar() {
             <span className="font-semibold">Hi, {username}!</span>
             {profilePhoto ? (
               <img
-                src={
-                  profilePhoto.startsWith("/uploads")
-                    ? `http://localhost:3000${profilePhoto}`
-                    : profilePhoto
-                }
+                src={profilePhoto}
                 alt="Profile"
                 className="w-10 h-10 rounded-full object-cover border-2 border-white"
               />
