@@ -15,11 +15,20 @@ export default function Navbar() {
 
   const username = getUsername() || "Guest";
 
-  // Load profile photo from localStorage
+  // Load profile photo from localStorage and fix localhost URLs
   useEffect(() => {
     const savedPhoto = localStorage.getItem("userProfilePhoto");
     if (savedPhoto) {
-      setProfilePhoto(savedPhoto);
+      // Convert localhost URLs to dynamic URLs
+      if (savedPhoto.includes("http://localhost:5000")) {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const fixedPhoto = savedPhoto.replace("http://localhost:5000", API_BASE_URL);
+        setProfilePhoto(fixedPhoto);
+        // Update localStorage with fixed URL
+        localStorage.setItem("userProfilePhoto", fixedPhoto);
+      } else {
+        setProfilePhoto(savedPhoto);
+      }
     }
   }, []);
 
