@@ -56,7 +56,8 @@ export default function JoinViewPage() {
 
     const loadGroup = async () => {
       try {
-        const allGroupsRes = await axios.get("${API_BASE_URL}/api/group/all");
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const allGroupsRes = await axios.get(`${API_BASE_URL}/api/group/all`);
         const foundGroup = allGroupsRes.data.data.find(g => g.id === parseInt(groupId));
 
         if (!foundGroup) {
@@ -76,10 +77,7 @@ export default function JoinViewPage() {
 
         if (status !== "approved") {
           try {
-            const pendingRes = await axios.get(
-              "${API_BASE_URL}/api/group/pending-members-for-user",
-              { params: { userId } }
-            );
+            const pendingRes = await axios.get(`${API_BASE_URL}/api/group/pending-members-for-user`, { params: { userId } });
             const pendingIds = pendingRes.data.data || [];
             if (pendingIds.includes(parseInt(groupId))) status = "pending";
           } catch {}
@@ -132,7 +130,7 @@ export default function JoinViewPage() {
     loadGroup();
 
     // --- Initialize socket ---
-    const socket = io(import.meta.env.VITE_API_URL || "${API_BASE_URL}", { 
+    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { 
       transports: ["websocket", "polling"],
       withCredentials: true 
     });
@@ -206,7 +204,8 @@ const handleFileUpload = async (e) => {
   formData.append("file", file);
 
   try {
-    const res = await axios.post("${API_BASE_URL}/api/upload", formData);
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const res = await axios.post(`${API_BASE_URL}/api/upload`, formData);
     const msg = {
       groupId: parseInt(groupId),
       sender: userId,
@@ -226,6 +225,7 @@ const handleFileUpload = async (e) => {
   // --- Join group ---
   const handleJoinGroup = async () => {
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       await axios.post(`${API_BASE_URL}/api/group/join`, { groupId: parseInt(groupId), userId });
       setUserStatus("pending");
       toast.success("Join request sent! Waiting for creator approval.");
@@ -289,7 +289,8 @@ const handleFileUpload = async (e) => {
 
   const handlePostAnnouncement = async () => {
     try {
-      await axios.post("${API_BASE_URL}/api/announcements/create", {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.post(`${API_BASE_URL}/api/announcements/create`, {
         groupId: group.id,
         userId: currentUser.id,
         title: announceTitle,
@@ -365,7 +366,8 @@ return (
                         onClick={async () => {
                           closeToast();
                           try {
-                            await axios.post("${API_BASE_URL}/api/group/leave", {
+                            const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+                            await axios.post(`${API_BASE_URL}/api/group/leave`, {
                               userId: currentUser.id,
                               groupId: group.id,
                             });
