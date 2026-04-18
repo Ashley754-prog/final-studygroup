@@ -43,7 +43,7 @@ export const RealtimeProvider = ({ children }) => {
     setSocket(sock);
 
     return () => sock.disconnect();
-  }, [socket, currentUser]);
+  }, []);
 
   // Real-time event listeners
   useEffect(() => {
