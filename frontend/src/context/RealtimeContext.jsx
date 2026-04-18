@@ -45,29 +45,35 @@ export const RealtimeProvider = ({ children }) => {
     return () => sock.disconnect();
   }, []);
 
+  // Safe socket event listener wrapper
+  const safeSocketOn = (event, callback) => {
+    if (!socket) return;
+    socket.on(event, callback);
+  };
+
   // Real-time event listeners
   useEffect(() => {
     if (!socket || !currentUser) return;
 
     // Group updates
-    socket.on("group_created", (data) => {
+    safeSocketOn("group_created", (data) => {
       toast.success(`New group "${data.group_name}" created!`);
       // Trigger refresh in components that listen for this event
       window.dispatchEvent(new CustomEvent('group_created', { detail: data }));
     });
 
-    socket.on("group_updated", (data) => {
+    safeSocketOn("group_updated", (data) => {
       toast.info(`Group "${data.group_name}" updated!`);
       window.dispatchEvent(new CustomEvent('group_updated', { detail: data }));
     });
 
-    socket.on("group_deleted", (data) => {
+    safeSocketOn("group_deleted", (data) => {
       toast.warning(`Group "${data.group_name}" deleted!`);
       window.dispatchEvent(new CustomEvent('group_deleted', { detail: data }));
     });
 
     // Join request updates
-    socket.on("join_request_sent", (data) => {
+    safeSocketOn("join_request_sent", (data) => {
       if (currentUser && data.requester_id === currentUser.id) {
         toast.success("Join request sent! Waiting for approval.");
       } else {
@@ -76,7 +82,7 @@ export const RealtimeProvider = ({ children }) => {
       window.dispatchEvent(new CustomEvent('join_request_sent', { detail: data }));
     });
 
-    socket.on("join_request_approved", (data) => {
+    safeSocketOn("join_request_approved", (data) => {
       if (currentUser && data.user_id === currentUser.id) {
         toast.success(`Your request to join "${data.group_name}" was approved!`);
       } else {
@@ -85,14 +91,14 @@ export const RealtimeProvider = ({ children }) => {
       window.dispatchEvent(new CustomEvent('join_request_approved', { detail: data }));
     });
 
-    socket.on("join_request_declined", (data) => {
+    safeSocketOn("join_request_declined", (data) => {
       if (currentUser && data.user_id === currentUser.id) {
         toast.error(`Your request to join "${data.group_name}" was declined.`);
       }
       window.dispatchEvent(new CustomEvent('join_request_declined', { detail: data }));
     });
 
-    socket.on("user_left_group", (data) => {
+    safeSocketOn("user_left_group", (data) => {
       if (data.user_id === currentUser.id) {
         toast.info(`You left "${data.group_name}"`);
       } else {
@@ -102,7 +108,7 @@ export const RealtimeProvider = ({ children }) => {
     });
 
     // Profile updates
-    socket.on("profile_updated", (data) => {
+    safeSocketOn("profile_updated", (data) => {
       if (data.user_id === currentUser.id) {
         toast.success("Profile updated successfully!");
       } else {
@@ -112,7 +118,7 @@ export const RealtimeProvider = ({ children }) => {
     });
 
     // New messages
-    socket.on("new_message", (data) => {
+    safeSocketOn("new_message", (data) => {
       if (data.sender_id !== currentUser.id) {
         toast.info(`New message from ${data.sender_name} in "${data.group_name}"`);
       }
