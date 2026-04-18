@@ -25,7 +25,7 @@ export const NotificationProvider = ({ children }) => {
     // Fetch initial unread count
     (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifications/${user.id}`);
         const data = await res.json();
         const count = data.filter(n => !n.is_read && !n.is_archived && !n.is_deleted).length;
         setUnreadCount(count);
