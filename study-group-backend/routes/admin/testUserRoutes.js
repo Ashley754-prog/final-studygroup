@@ -28,10 +28,9 @@ router.post("/create-test-user", async (req, res) => {
         bio, 
         profile_photo, 
         is_verified, 
-        role, 
         created_at, 
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         'Minty',
         'Super', 
@@ -42,7 +41,6 @@ router.post("/create-test-user", async (req, res) => {
         'Test user for user-to-user interactions',
         null,
         1, // is_verified = true (approved)
-        'user', // role = user
       ]
     );
     
