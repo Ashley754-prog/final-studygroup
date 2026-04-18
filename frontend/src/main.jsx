@@ -7,7 +7,7 @@ import { NotificationProvider } from "./context/NotificationContext.jsx"; // <--
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId="393347327727-r426598q1u50ffdjg9r6hoiq8n0mcik0.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "393347327727-7osvc6kkpsn5ogmvradmmiql1vfpvdhc.apps.googleusercontent.com"}>
       <NotificationProvider>
         <App />
       </NotificationProvider>
