@@ -5,10 +5,20 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // Ensures assets are linked relatively
+  base: '/', // Use absolute base path for Railway deployment
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
     },
   },
   preview: {
