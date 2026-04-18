@@ -31,6 +31,7 @@ import notifRoutes from "./routes/notifs.js";
 import announcementRoutes from "./routes/announcements.js";
 import dashboardRoutes from "./routes/admin/dashboardRoutes.js";
 import adminSettingsRoutes from "./routes/admin/adminSettingsRoutes.js";
+import testUserRoutes from "./routes/admin/testUserRoutes.js";
 import tempFixRoutes from "./routes/temp-fix.js";
 
 dotenv.config();
@@ -102,6 +103,7 @@ app.use("/api/schedules", schedulesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", groupAdminRoutes);
 app.use("/api/admin", adminSettingsRoutes);
+app.use("/api/admin", testUserRoutes);
 app.use("/api/user", userAdminRoutes);
 app.use("/api/admin/activities", activityRoutes);
 app.use("/api/admin/dashboard", dashboardRoutes);
