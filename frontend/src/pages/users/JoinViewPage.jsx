@@ -248,17 +248,18 @@ const handleFileUpload = async (e) => {
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return toast.error("Invalid start or end date/time!");
-    }
-    if (startDate >= endDate) {
-      return toast.error("End time must be after start time!");
-    }
 
-    try {
-      const payload = {
-        title,
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
-        location: meetingType === "physical" ? location : "Online",
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const payload = {
+      title,
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+      location: meetingType === "physical" ? location : "Online",
+      description,
+      meetingType,
+      meetingLink: meetingType === "online" ? meetingLink : null
+    };
         description,
         meetingType,
         meetingLink: meetingType === "online" ? meetingLink : null
