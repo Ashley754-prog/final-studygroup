@@ -144,7 +144,7 @@ export const createAccount = async (req, res) => {
         "Verify Your Crimsons Study Squad Account",
         `<h2>Welcome ${first_name}!</h2>
          <p>Your verification code is: <strong style="font-size:18px">${verificationCode}</strong></p>
-         <p>Or click here: <a href="http://localhost:5173/verify?email=${encodeURIComponent(email)}">Verify Email</a></p>`
+         <p>Or click here: <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/verify?email=${encodeURIComponent(email)}">Verify Email</a></p>`
       );
     } catch (emailErr) {
       console.error("Email failed but account created:", emailErr);

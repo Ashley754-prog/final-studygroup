@@ -214,7 +214,7 @@ router.post("/approve", async (req, res) => {
             <p>Great news! Your request to join the study group "${groupName}" has been <strong style="color: #008000;">APPROVED</strong>!</p>
             <p>You can now access the group and start collaborating with other members.</p>
             <p>Visit your dashboard to see all your approved study groups:</p>
-            <a href="http://localhost:5173/my-study-groups" style="color:#800000; text-decoration:underline; font-weight:bold;">View My Study Groups</a>
+            <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/my-study-groups" style="color:#800000; text-decoration:underline; font-weight:bold;">View My Study Groups</a>
             <br/><br/>
             <p>– Crimsons Study Squad Team</p>
           </div>

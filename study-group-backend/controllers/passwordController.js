@@ -34,7 +34,7 @@ export const forgotPassword = async (req, res) => {
       [resetTokenHash, expireTime, user.id]
     );
 
-    const resetURL = `http://localhost:5173/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
+    const resetURL = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
 
     const message = `
       <div style="font-family: Arial, sans-serif; line-height:1.6;">

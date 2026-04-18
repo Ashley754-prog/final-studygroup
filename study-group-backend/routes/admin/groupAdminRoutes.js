@@ -48,7 +48,7 @@ router.patch("/approve/:id", async (req, res) => {
               <li>Communicate with group members</li>
             </ul>
             <p>Visit your dashboard to manage your group:</p>
-            <a href="http://localhost:5173/group-creator" style="color:#800000; text-decoration:underline; font-weight:bold;">Manage My Study Groups</a>
+            <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/group-creator" style="color:#800000; text-decoration:underline; font-weight:bold;">Manage My Study Groups</a>
             <br/><br/>
             <p>Thank you for creating a study group to help fellow students!</p>
             <p>Best regards,<br/>Crimsons Study Squad Team</p>
@@ -123,9 +123,9 @@ router.patch("/decline/:id", async (req, res) => {
             </ul>
             
             <p>To edit and resubmit your group:</p>
-            <a href="http://localhost:5173/edit-group/${id}" style="color:#800000; text-decoration:underline; font-weight:bold;">Edit Your Group: "${group_name}"</a>
+            <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/edit-group/${id}" style="color:#800000; text-decoration:underline; font-weight:bold;">Edit Your Group: "${group_name}"</a>
             <br/><br/>
-            <p style="font-size: 12px; color: #666;">Or view all your groups: <a href="http://localhost:5173/group-creator" style="color:#800000; text-decoration:underline;">Manage My Study Groups</a></p>
+            <p style="font-size: 12px; color: #666;">Or view all your groups: <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/group-creator" style="color:#800000; text-decoration:underline;">Manage My Study Groups</a></p>
             
             <br/><br/>
             <p>If you have any questions about the decline reason, feel free to contact the admin team.</p>
