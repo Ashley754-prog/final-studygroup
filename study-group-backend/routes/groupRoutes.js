@@ -410,4 +410,42 @@ router.post("/leave", async (req, res) => {
   }
 });
 
+// UPDATE GROUP DETAILS (for creators)
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { group_name, description, course, topic, location, size, userId } = req.body;
+
+  try {
+    // Verify user is the creator
+    const [groupCheck] = await pool.query("SELECT created_by FROM study_groups WHERE id = ?", [id]);
+    if (!groupCheck.length || groupCheck[0].created_by !== userId) {
+      return res.status(403).json({ message: "Not authorized to edit this group" });
+    }
+
+    // Update group
+    await pool.query(
+      `UPDATE study_groups SET 
+        group_name = ?, description = ?, course = ?, topic = ?, location = ?, size = ?, 
+        status = 'pending', updated_at = NOW()
+       WHERE id = ?`,
+      [group_name, description, course, topic, location, size, id]
+    );
+
+    // Emit real-time update
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("group_updated", {
+        group_id: parseInt(id),
+        group_name,
+        updated_by: userId
+      });
+    }
+
+    res.json({ success: true, message: "Group updated successfully!" });
+  } catch (err) {
+    console.error("Update group error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 export default router;

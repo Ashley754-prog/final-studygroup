@@ -99,47 +99,7 @@ export default function InboxPage() {
     } catch (err) { toast.error("Failed"); }
   };
 
-  // ✅ Approve join request
-  const approveRequest = async (notif) => {
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.post(`${API_BASE_URL}/api/group/approve`, {
-        groupId: notif.related_id,
-        userId: notif.requester_id
-      });
-
-      toast.success("Member approved!");
-
-      // Mark creator's notification as read & archived
-      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/read`);
-      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/archive`);
-      setMessages(prev => prev.map(m => m.id === notif.id ? { ...m, is_read: 1, is_archived: 1 } : m));
-
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to approve");
-    }
-  };
-
-  // ✅ Decline join request
-  const declineRequest = async (notif) => {
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.post(`${API_BASE_URL}/api/group/decline`, {
-        groupId: notif.related_id,
-        userId: notif.requester_id
-      });
-
-      toast.success("Request declined!");
-
-      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/read`);
-      await axios.patch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/notifs/${notif.id}/archive`);
-      setMessages(prev => prev.map(m => m.id === notif.id ? { ...m, is_read: 1, is_archived: 1 } : m));
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to decline");
-    }
-  };
+  // Admin approvals are now handled via email notifications only
 
   // Filter messages properly: join requests for creators only
   const filteredMessages = messages.filter(m => {
@@ -239,20 +199,8 @@ export default function InboxPage() {
 
                   <div className="flex items-center gap-3">
                       {msg.type === "join_request" && !msg.is_archived && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); approveRequest(msg); }}
-                            className="bg-green-600 text-white px-1 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-1 shadow"
-                          >
-                            <CheckIcon className="w-4 h-4" /> Approve
-                          </button>
-
-                          <button
-                            onClick={(e) => { e.stopPropagation(); declineRequest(msg); }}
-                            className="bg-red-600 text-white px-1 py-2 rounded-lg font-bold hover:bg-red-700 flex items-center gap-1 shadow"
-                          >
-                            <XMarkIcon className="w-4 h-4" /> Decline
-                          </button>
+                        <div className="text-sm text-gray-500 italic">
+                          Admin approval required. Check your email for updates.
                         </div>
                       )}
                     <div className="flex items-center gap-2">

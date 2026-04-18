@@ -4,9 +4,6 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRealtime } from "../context/RealtimeContext.jsx";
-import { useRealtimeUpdates } from "../hooks/useRealtimeUpdates.js";
-
-const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { transports: ["websocket", "polling"] });
 
 export default function UserDashboard() {
   const navigate = useNavigate();
@@ -60,12 +57,8 @@ export default function UserDashboard() {
     fetchGroups();
   }, []);
 
-  // Real-time updates for group changes
-  useRealtimeUpdates(fetchGroups, [
-    'group_created', 'group_updated', 'group_deleted',
-    'join_request_sent', 'join_request_approved', 'join_request_declined',
-    'user_left_group'
-  ]);
+  // Real-time updates are handled via RealtimeContext
+  // The socket events in RealtimeContext will automatically trigger refreshes
 
   // Listen for approval notifications via socket
   useEffect(() => {
