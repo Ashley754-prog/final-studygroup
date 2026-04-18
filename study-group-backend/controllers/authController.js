@@ -166,17 +166,41 @@ export const createAccount = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
+    
     const [users] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    console.log('Found users:', users.length);
 
-    if (users.length === 0) return res.status(400).json({ message: "Invalid credentials" });
+    if (users.length === 0) {
+      console.log('User not found');
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
     const user = users[0];
+    
+    console.log('User data:', {
+      id: user.id,
+      email: user.email,
+      isAdmin: user.is_admin,
+      isVerified: user.is_verified,
+      hasPassword: !!user.password
+    });
 
-    if (!user.password) return res.status(400).json({ message: "Use Google Sign-In" });
+    if (!user.password) {
+      console.log('User has no password');
+      return res.status(400).json({ message: "Use Google Sign-In" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    console.log('Password match:', isMatch);
+    if (!isMatch) {
+      console.log('Password does not match');
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    if (!user.is_verified) return res.status(400).json({ message: "Account not verified" });
+    if (!user.is_verified) {
+      console.log('User not verified');
+      return res.status(400).json({ message: "Account not verified" });
+    }
 
     const token = generateToken(user.id);
     res.status(200).json({ 
