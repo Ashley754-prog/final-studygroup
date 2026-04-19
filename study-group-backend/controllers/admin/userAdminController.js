@@ -133,3 +133,21 @@ export const deleteUserById = async (req, res) => {
     connection.release();
   }
 };
+
+// RESTORE USER
+export const restoreUser = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Update user status back to active
+    await pool.execute(
+      "UPDATE users SET status = 'active' WHERE id = ?",
+      [id]
+    );
+
+    res.json({ message: "User restored successfully!" });
+  } catch (err) {
+    console.error("Restore user error:", err);
+    res.status(500).json({ message: "Failed to restore user", error: err.message });
+  }
+};

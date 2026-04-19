@@ -200,6 +200,19 @@ export default function ManageUsers() {
     });
   };
 
+  // Restore user
+  const restoreUser = async (userId, username) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.put(`${API_BASE_URL}/api/user/restore/${userId}`);
+      toast.success(`User "${username}" restored successfully!`);
+      fetchUsers();
+    } catch (err) {
+      console.error("Failed to restore user:", err);
+      toast.error("Failed to restore user");
+    }
+  };
+
   const confirmDeleteUser = async () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -348,7 +361,7 @@ export default function ManageUsers() {
                   </div>
                 </div>
 
-                {/* Action Buttons - Only View Details for archived users */}
+                {/* Action Buttons - View Details and Restore for archived users */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSelectedUser(user)}
@@ -356,6 +369,13 @@ export default function ManageUsers() {
                   >
                     <UserIcon className="w-5 h-5" />
                     View Details
+                  </button>
+                  <button
+                    onClick={() => restoreUser(user.id, user.username)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                  >
+                    <CheckCircleIcon className="w-5 h-5" />
+                    Restore
                   </button>
                 </div>
               </div>
