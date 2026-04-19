@@ -867,7 +867,6 @@ return (
                 {(() => {
                   if (!msg.time) return "";
                   const date = new Date(msg.time);
-                  if (isNaN(date.getTime())) return "";
                   const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
                   const offsetHours = isLocalDev ? 16 : 0;
                   const adjustedDate = new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
