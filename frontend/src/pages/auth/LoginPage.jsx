@@ -107,7 +107,21 @@ localStorage.setItem("user", JSON.stringify(userData));
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Google Login failed");
+      
+      // Check if response indicates no account found
+      if (!res.ok || !data.success) {
+        // Show specific error for no account found
+        if (data.message && data.message.includes("No account found")) {
+          toast.error("User not found. Please create an account first using your WMSU email.");
+          // Redirect to create account page after a short delay
+          setTimeout(() => {
+            navigate("/register");
+          }, 2000);
+        } else {
+          toast.error(data.message || "Google Login failed");
+        }
+        return;
+      }
 
 const userData = {
   id: data.user.id || data.user._id, // ensure id is stored
