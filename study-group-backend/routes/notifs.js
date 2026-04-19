@@ -69,4 +69,35 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// CREATE NOTIFICATION
+router.post("/", async (req, res) => {
+  const { user_id, title, message, type, related_id, requester_id } = req.body;
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, related_id, requester_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [user_id, title, message, type, related_id, requester_id]
+    );
+    
+    // Get the created notification
+    const [notification] = await pool.query(
+      `SELECT id, user_id, title, message, type, related_id, requester_id, 
+              is_read, is_starred, is_archived, is_deleted, created_at
+       FROM notifications WHERE id = ?`,
+      [result.insertId]
+    );
+    
+    // Emit real-time notification to the specific user
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${user_id}`).emit("notification", notification[0]);
+    }
+    
+    res.json(notification[0]);
+  } catch (err) {
+    console.error("Error creating notification:", err);
+    res.status(500).json({ success: false, message: "Failed to create notification" });
+  }
+});
+
 export default router;

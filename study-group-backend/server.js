@@ -141,54 +141,55 @@ io.on("connection", (socket) => {
     console.log(`User ${socket.id} joined group_${groupId}`);
   });
 
-socket.on("send_message", async ({ groupId, sender, text, fileLink }) => {
-  try {
-    // 1. Save to DB with proper timezone
-    const [result] = await pool.execute(
-      `INSERT INTO group_messages (group_id, sender_id, text, file_link, time)
-         VALUES (?, ?, ?, ?, NOW())`,
-      [groupId, sender, text || null, fileLink || null]
-    );
+  socket.on("send_message", async ({ groupId, sender, text, fileLink }) => {
+    try {
+      // 1. Save to DB with proper timezone
+      const [result] = await pool.execute(
+        `INSERT INTO group_messages (group_id, sender_id, text, file_link, time)
+           VALUES (?, ?, ?, ?, NOW())`,
+        [groupId, sender, text || null, fileLink || null]
+      );
 
-    const [newMsg] = await pool.execute(
-      `SELECT 
-        gm.id, 
-        gm.group_id, 
-        gm.sender_id,
-        gm.text, 
-        gm.file_link AS fileLink, 
-        gm.time,
-        u.username AS sender_name
-       FROM group_messages gm
-       JOIN users u ON gm.sender_id = u.id
-       WHERE gm.id = ?`,
-      [result.insertId]
-    );
+      const [newMsg] = await pool.execute(
+        `SELECT 
+          gm.id, 
+          gm.group_id, 
+          gm.sender_id,
+          gm.text, 
+          gm.file_link AS fileLink, 
+          gm.time,
+          u.username AS sender_name
+         FROM group_messages gm
+         JOIN users u ON gm.sender_id = u.id
+         WHERE gm.id = ?`,
+        [result.insertId]
+      );
 
-    // 3. Broadcast with proper time formatting
-    io.to(`group_${groupId}`).emit("receive_message", {
-      groupId: parseInt(groupId),
-      message: {
-        ...newMsg[0],
-        time: (() => {
-          const date = new Date(newMsg[0].time);
-          // The database stores UTC time, but JavaScript interprets it as local time
-          // We need to add 16 hours to compensate for the timezone conversion issue
-          const phTime = new Date(date.getTime() + (16 * 60 * 60 * 1000));
-          return phTime.toLocaleTimeString('en-US', {
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true
-          });
-        })()
-      }
-    });
+      // 3. Broadcast with proper time formatting
+      io.to(`group_${groupId}`).emit("receive_message", {
+        groupId: parseInt(groupId),
+        message: {
+          ...newMsg[0],
+          time: (() => {
+            const date = new Date(newMsg[0].time);
+            // The database stores UTC time, but JavaScript interprets it as local time
+            // We need to add 16 hours to compensate for the timezone conversion issue
+            const phTime = new Date(date.getTime() + (16 * 60 * 60 * 1000));
+            return phTime.toLocaleTimeString('en-US', {
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true
+            });
+          })()
+        }
+      });
 
-  } catch (err) {
-    console.error("Socket send_message error:", err);
-  }
-});
+    } catch (err) {
+      console.error("Socket send_message error:", err);
+    }
+  });
 
+  // Real-time schedule listener
   // 🔹 Real-time schedule listener
   socket.on("schedule_created", (schedule) => {
     if (!schedule.groupId) return;

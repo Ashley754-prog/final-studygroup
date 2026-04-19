@@ -81,6 +81,26 @@ export const createGroupSchedule = async (req, res) => {
   }
 };
 
+export const deleteSchedule = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const [result] = await pool.execute(
+      "DELETE FROM schedules WHERE id = ?",
+      [id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+    
+    res.json({ message: "Schedule deleted successfully" });
+  } catch (err) {
+    console.error("Delete schedule error:", err);
+    res.status(500).json({ message: "Failed to delete schedule" });
+  }
+};
+
 export const generateMeetLink = async (req, res) => {
   try {
     // Generate a simple Jitsi Meet link (free, no API key needed)

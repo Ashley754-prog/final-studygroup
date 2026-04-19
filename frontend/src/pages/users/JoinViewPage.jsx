@@ -46,8 +46,15 @@ export default function JoinViewPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
-  const [showAnnouncementsModal, setShowAnnouncements] = useState(false);
+  const [showAnnouncementsModal, setShowAnnouncementsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteAnnouncementModal, setShowDeleteAnnouncementModal] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Selection states
+  const [selectedAnnouncements, setSelectedAnnouncements] = useState([]);
+  const [selectedSchedules, setSelectedSchedules] = useState([]);
+  const [selectionMode, setSelectionMode] = useState({ announcements: false, schedules: false });
 
   const [title, setTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
@@ -172,39 +179,48 @@ export default function JoinViewPage() {
     socket.emit("join_group", parseInt(groupId));
 
     // --- Socket listeners ---
-socket.on("receive_message", (data) => {
-  const { groupId: receivedGroupId, message } = data;
-  if (parseInt(receivedGroupId) === parseInt(groupId)) {
-    setMessages(prev => [...prev, message]);
-    
-    // Auto-scroll to bottom for new messages
-    setTimeout(() => {
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    socket.on("receive_message", (data) => {
+      const { groupId: receivedGroupId, message } = data;
+      if (parseInt(receivedGroupId) === parseInt(groupId)) {
+        setMessages(prev => [...prev, message]);
+        
+        // Auto-scroll to bottom for new messages
+        setTimeout(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+          }
+        }, 100);
       }
-    }, 100);
-  }
-});
-
-socket.on("new_schedule", (newSchedule) => {
-  if (newSchedule.groupId === parseInt(groupId)) {
-    setEvents(prev => {
-      if (prev.some(e => e.id === newSchedule.id)) return prev;
-      return [...prev, {
-        ...newSchedule,
-        start: new Date(newSchedule.start + 'Z'), // Force local timezone
-        end: new Date(newSchedule.end + 'Z'),     // Force local timezone
-        meetingType: (newSchedule.meetingType || "physical").toLowerCase(),
-        meetingLink: newSchedule.meetingLink || null,
-        color: "bg-yellow-100"
-      }];
     });
-  }
-});
+
+    socket.on("new_schedule", (newSchedule) => {
+      if (newSchedule.groupId === parseInt(groupId)) {
+        setEvents(prev => {
+          if (prev.some(e => e.id === newSchedule.id)) return prev;
+          return [...prev, {
+            ...newSchedule,
+            start: (() => {
+              const date = new Date(newSchedule.start);
+              // Add 16 hours to compensate for timezone conversion issue
+              return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+            })(),
+            end: (() => {
+              const date = new Date(newSchedule.end);
+              // Add 16 hours to compensate for timezone conversion issue
+              return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+            })(),
+            meetingType: (newSchedule.meetingType || "physical").toLowerCase(),
+            meetingLink: newSchedule.meetingLink || null,
+            color: "bg-yellow-100"
+          }];
+        });
+      }
+    });
 
     socket.on("newAnnouncement", (announcement) => {
       if (announcement.group_id === parseInt(groupId)) {
         setAnnouncements(prev => [announcement, ...prev]);
+        toast.success("New announcement posted!");
       }
     });
 
@@ -330,6 +346,31 @@ const handleCreateSchedule = async (e) => {
 
     const newEvent = res.data.schedule;
     
+    // Send notifications to group members (excluding the creator)
+    if (group.members && group.members.length > 0) {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      
+      // Create notification for each group member
+      const notificationPromises = group.members
+        .filter(member => member.id !== currentUser.id) // Exclude the schedule creator
+        .map(member => 
+          axios.post(`${API_BASE_URL}/api/notifs`, {
+            user_id: member.id,
+            title: "New Study Schedule Created",
+            message: `${title} on ${meetingDate} at ${startTime} - ${endTime}`,
+            type: "schedule",
+            related_id: newEvent.id,
+            requester_id: currentUser.id
+          })
+        );
+      
+      try {
+        await Promise.all(notificationPromises);
+      } catch (err) {
+        console.error("Failed to send notifications:", err);
+      }
+    }
+    
     // For socket, use the same formatted strings
     socketRef.current.emit("schedule_created", { 
       ...newEvent, 
@@ -351,24 +392,99 @@ const handleCreateSchedule = async (e) => {
   }
 };
 
-  const handlePostAnnouncement = async () => {
+const handlePostAnnouncement = async () => {
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    await axios.post(`${API_BASE_URL}/api/announcements/create`, {
+      groupId: group.id,
+      userId: currentUser.id,
+      title: announceTitle,
+      description: announceDesc,
+    });
+
+    toast.success("Announcement posted successfully!");
+    setShowAnnouncements(false);
+    setAnnounceTitle("");
+    setAnnounceDesc("");
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to post announcement.");
+  }
+};
+
+  // Selection functions
+  const toggleAnnouncementSelection = (id) => {
+    setSelectedAnnouncements(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleScheduleSelection = (id) => {
+    setSelectedSchedules(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllAnnouncements = () => {
+    setSelectedAnnouncements(announcements.map(a => a.id));
+  };
+
+  const selectAllSchedules = () => {
+    setSelectedSchedules(events.map(e => e.id));
+  };
+
+  const clearSelections = () => {
+    setSelectedAnnouncements([]);
+    setSelectedSchedules([]);
+  };
+
+  // Delete functions
+  const deleteSelectedAnnouncements = async () => {
+    if (selectedAnnouncements.length === 0) return;
+    
+    setShowDeleteAnnouncementModal(true);
+  };
+
+  const confirmDeleteAnnouncements = async () => {
+    setShowDeleteAnnouncementModal(false);
+    
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.post(`${API_BASE_URL}/api/announcements/create`, {
-        groupId: group.id,
-        userId: currentUser.id,
-        title: announceTitle,
-        description: announceDesc,
-      });
-
-      toast.success("Announcement posted successfully!");
-      setShowAnnouncements(false);
-      setAnnounceTitle("");
-      setAnnounceDesc("");
-
+      await Promise.all(
+        selectedAnnouncements.map(id => axios.delete(`${API_BASE_URL}/api/announcements/${id}`))
+      );
+      
+      setAnnouncements(prev => prev.filter(a => !selectedAnnouncements.includes(a.id)));
+      setSelectedAnnouncements([]);
+      toast.success(`${selectedAnnouncements.length} announcement(s) deleted successfully!`);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to post announcement.");
+      console.error("Failed to delete announcements:", err);
+      toast.error("Failed to delete announcements.");
+    }
+  };
+
+  const deleteSelectedSchedules = async () => {
+    if (selectedSchedules.length === 0) return;
+    
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteSchedules = async () => {
+    setShowDeleteModal(false);
+    
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await Promise.all(
+        selectedSchedules.map(id => axios.delete(`${API_BASE_URL}/api/calendar/${id}`))
+      );
+      
+      setEvents(prev => prev.filter(e => !selectedSchedules.includes(e.id)));
+      setSelectedSchedules([]);
+      toast.success(`${selectedSchedules.length} schedule(s) deleted successfully!`);
+    } catch (err) {
+      console.error("Failed to delete schedules:", err);
+      toast.error("Failed to delete schedules.");
     }
   };
 
@@ -476,7 +592,85 @@ return (
           <h2 className="text-2xl font-semibold text-[#800000] tracking-wide">
             Study Dates and Announcements
           </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setSelectionMode(prev => ({
+                  ...prev,
+                  announcements: !prev.announcements,
+                  schedules: false
+                }));
+                setSelectedAnnouncements([]);
+                setSelectedSchedules([]);
+              }}
+              className={`px-3 py-1 rounded text-sm ${
+                selectionMode.announcements 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {selectionMode.announcements ? 'Cancel Selection' : 'Select Announcements'}
+            </button>
+            <button
+              onClick={() => {
+                setSelectionMode(prev => ({
+                  ...prev,
+                  schedules: !prev.schedules,
+                  announcements: false
+                }));
+                setSelectedAnnouncements([]);
+                setSelectedSchedules([]);
+              }}
+              className={`px-3 py-1 rounded text-sm ${
+                selectionMode.schedules 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {selectionMode.schedules ? 'Cancel Selection' : 'Select Schedules'}
+            </button>
+            {(selectedAnnouncements.length > 0 || selectedSchedules.length > 0) && (
+              <>
+                <button
+                  onClick={clearSelections}
+                  className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700 hover:bg-gray-300"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={selectedAnnouncements.length > 0 ? deleteSelectedAnnouncements : deleteSelectedSchedules}
+                  className="px-3 py-1 rounded text-sm bg-red-500 text-white hover:bg-red-600"
+                >
+                  Delete ({selectedAnnouncements.length || selectedSchedules.length})
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Selection controls */}
+        {(selectionMode.announcements || selectionMode.schedules) && (
+          <div className="flex gap-2 mb-4 p-2 bg-gray-50 rounded">
+            <button
+              onClick={selectionMode.announcements ? selectAllAnnouncements : selectAllSchedules}
+              className="px-3 py-1 rounded text-sm bg-blue-500 text-white hover:bg-blue-600"
+            >
+              Select All
+            </button>
+            <button
+              onClick={clearSelections}
+              className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700 hover:bg-gray-300"
+            >
+              Clear Selection
+            </button>
+            <span className="text-sm text-gray-600">
+              {selectionMode.announcements 
+                ? `${selectedAnnouncements.length} of ${announcements.length} announcements selected`
+                : `${selectedSchedules.length} of ${events.length} schedules selected`
+              }
+            </span>
+          </div>
+        )}
 
           <div className="space-y-4">
             {events.length === 0 && announcements.length === 0 ? (
@@ -497,9 +691,17 @@ return (
 
                   // Announcements
                   ...announcements.map(a => ({
-                    title: a.title,
-                    start: new Date(a.created_at),
-                    end: new Date(a.created_at),
+                    ...a,
+                    start: (() => {
+                      const date = new Date(a.created_at);
+                      // Add 16 hours to compensate for timezone conversion issue
+                      return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+                    })(),
+                    end: (() => {
+                      const date = new Date(a.created_at);
+                      // Add 16 hours to compensate for timezone conversion issue
+                      return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+                    })(),
                     color: "bg-blue-100",
                     description: a.description || "",
                     meetingType: null,
@@ -514,14 +716,56 @@ return (
                 return combinedEvents.map((event, i) => (
                   <div
                     key={i}
-                    className={`${event.color} p-3 rounded-lg border border-gray-500 flex flex-col gap-2 cursor-pointer hover:shadow-md`}
-                    onClick={() => event.isAnnouncement && setSelectedAnnouncement(event)}
+                    className={`${event.color} p-3 rounded-lg border border-gray-500 flex flex-col gap-2 cursor-pointer hover:shadow-md ${(selectionMode.announcements && event.isAnnouncement) || (selectionMode.schedules && !event.isAnnouncement) ? 'ring-2 ring-blue-400' : ''}`}
+                    onClick={(e) => {
+                      if ((selectionMode.announcements && event.isAnnouncement) || (selectionMode.schedules && !event.isAnnouncement)) {
+                        e.stopPropagation();
+                        if (event.isAnnouncement) {
+                          toggleAnnouncementSelection(event.id);
+                        } else {
+                          toggleScheduleSelection(event.id);
+                        }
+                      } else if (event.isAnnouncement) {
+                        setSelectedAnnouncement(event);
+                      }
+                    }}
                   >
+                    {/* Selection checkbox */}
+                    {((selectionMode.announcements && event.isAnnouncement) || (selectionMode.schedules && !event.isAnnouncement)) && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={
+                            (event.isAnnouncement && selectedAnnouncements.includes(event.id)) ||
+                            (!event.isAnnouncement && selectedSchedules.includes(event.id))
+                          }
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (event.isAnnouncement) {
+                              toggleAnnouncementSelection(event.id);
+                            } else {
+                              toggleScheduleSelection(event.id);
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {event.isAnnouncement ? 'Announcement' : 'Schedule'}
+                        </span>
+                      </div>
+                    )}
+                    
                     <h3 className="font-semibold text-[#800000] text-lg">{event.title}</h3>
                     <p className="text-sm text-gray-700 tracking-wide">
-                      {event.start.toDateString()} •{" "}
-                      {event.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -{" "}
-                      {event.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {event.start.toDateString()} ·{" "}
+                      {event.isAnnouncement 
+                        ? event.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : `${event.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${event.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                      }
                     </p>
 
           {event.meetingType === "online" && event.meetingLink ? (
@@ -934,6 +1178,90 @@ return (
           </div>
         </div>
       )}
+
+{/* Delete Confirmation Modal */}
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-8 w-96 shadow-2xl">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-[#800000] tracking-wide">
+          Confirm Delete
+        </h2>
+        <button onClick={() => setShowDeleteModal(false)}>
+          <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-red-600" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <p className="text-gray-700 mb-4">
+          Are you sure you want to delete {selectedSchedules.length} schedule(s)? This action cannot be undone.
+        </p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <p className="text-sm text-red-700">
+            <strong>Warning:</strong> All selected schedules will be permanently removed.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowDeleteModal(false)}
+          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={confirmDeleteSchedules}
+          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
+        >
+          Delete {selectedSchedules.length} Schedule{selectedSchedules.length > 1 ? 's' : ''}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Announcement Delete Confirmation Modal */}
+{showDeleteAnnouncementModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-8 w-96 shadow-2xl">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-[#800000] tracking-wide">
+          Confirm Delete
+        </h2>
+        <button onClick={() => setShowDeleteAnnouncementModal(false)}>
+          <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-red-600" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <p className="text-gray-700 mb-4">
+          Are you sure you want to delete {selectedAnnouncements.length} announcement(s)? This action cannot be undone.
+        </p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <p className="text-sm text-red-700">
+            <strong>Warning:</strong> All selected announcements will be permanently removed.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowDeleteAnnouncementModal(false)}
+          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={confirmDeleteAnnouncements}
+          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
+        >
+          Delete {selectedAnnouncements.length} Announcement{selectedAnnouncements.length > 1 ? 's' : ''}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 </div>
   );
 }

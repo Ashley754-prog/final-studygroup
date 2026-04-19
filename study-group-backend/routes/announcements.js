@@ -57,5 +57,25 @@ router.get("/group/:groupId", async (req, res) => {
   }
 });
 
+// Delete announcement
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const [result] = await pool.execute(
+      "DELETE FROM announcements WHERE id = ?",
+      [id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Announcement not found" });
+    }
+    
+    res.json({ message: "Announcement deleted successfully" });
+  } catch (err) {
+    console.error("Delete announcement error:", err);
+    res.status(500).json({ message: "Failed to delete announcement" });
+  }
+});
 
 export default router;
