@@ -76,8 +76,15 @@ router.get("/all", async (req, res) => {
     `);
 
     for (let group of groups) {
-      const [members] = await pool.query("SELECT COUNT(*) as count FROM group_members WHERE group_id = ?", [group.id]);
-      group.current_members = members[0].count || 0;
+      const [members] = await pool.query(`
+        SELECT u.id, u.username, u.first_name, u.middle_name, u.last_name
+        FROM group_members gm
+        JOIN users u ON gm.user_id = u.id
+        WHERE gm.group_id = ? AND gm.status = 'approved'
+      `, [group.id]);
+      
+      group.current_members = members.length || 0;
+      group.members = members;
     }
 
     res.json({ data: groups });
