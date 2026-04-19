@@ -1,11 +1,13 @@
 export const loginUser = (user, token) => {
   localStorage.setItem("user", JSON.stringify(user));
   localStorage.setItem("token", token);
+  localStorage.setItem("userSessionTimestamp", Date.now().toString());
 };
 
 export const logoutUser = () => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
+  localStorage.removeItem("userSessionTimestamp");
 };
 
 export const getToken = () => localStorage.getItem("token");
@@ -20,6 +22,19 @@ export const getUser = () => {
       console.error("Invalid user data found, clearing");
       logoutUser();
       return null;
+    }
+    
+    // Validate session timestamp to prevent stale data
+    const sessionTimestamp = localStorage.getItem("userSessionTimestamp");
+    if (sessionTimestamp) {
+      const sessionAge = Date.now() - parseInt(sessionTimestamp);
+      const maxSessionAge = 5 * 60 * 1000; // 5 minutes
+      
+      if (sessionAge > maxSessionAge) {
+        console.log("Session expired, clearing data");
+        logoutUser();
+        return null;
+      }
     }
     
     return parsedUser;
@@ -53,3 +68,20 @@ export const getUsername = () => {
 };
 
 export const isAuthenticated = () => !!getToken();
+
+export const refreshSession = () => {
+  const user = getUser();
+  if (user) {
+    localStorage.setItem("userSessionTimestamp", Date.now().toString());
+  }
+};
+
+export const isSessionExpired = () => {
+  const sessionTimestamp = localStorage.getItem("userSessionTimestamp");
+  if (!sessionTimestamp) return true;
+  
+  const sessionAge = Date.now() - parseInt(sessionTimestamp);
+  const maxSessionAge = 5 * 60 * 1000; // 5 minutes
+  
+  return sessionAge > maxSessionAge;
+};
