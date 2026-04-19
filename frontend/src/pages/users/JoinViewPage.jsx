@@ -868,6 +868,12 @@ return (
                     if (!msg.time) return "";
                     console.log("Chat time debug:", msg.time); // Debug log
                     try {
+                      // Check if it's a time-only string like "11:49 AM"
+                      if (typeof msg.time === 'string' && msg.time.includes(':') && (msg.time.includes('AM') || msg.time.includes('PM'))) {
+                        // It's already a formatted time, return it directly
+                        return msg.time;
+                      }
+                      
                       const date = new Date(msg.time);
                       if (isNaN(date.getTime())) {
                         console.log("Invalid date detected:", msg.time);
