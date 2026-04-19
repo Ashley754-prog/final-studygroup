@@ -375,7 +375,13 @@ return (
 
           {/* Leave Group Button */}
           <div className="flex gap-2 -mt-3 justify-end">
-          <div className="flex items-center gap-2 text-sm text-gray-800 mb-2 mr-28">
+          <div 
+            className="flex items-center gap-2 text-sm text-gray-800 mb-2 mr-28 cursor-pointer hover:text-[#800000] transition-colors"
+            onClick={() => {
+              setSelectedMember(null);
+              setShowMembersModal(true);
+            }}
+          >
             <UserGroupIcon className="w-7 h-7 text-[#800000]" />
             <span className="font-medium">Members ({group.current_members})</span>
           </div>
@@ -774,12 +780,14 @@ return (
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-bold text-lg">
-                        {selectedMember.username?.charAt(0)?.toUpperCase()}
+                        {selectedMember.first_name?.charAt(0)?.toUpperCase() || selectedMember.username?.charAt(0)?.toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-800">{selectedMember.username}</h4>
-                      <p className="text-sm text-blue-600">Member</p>
+                      <h4 className="font-semibold text-blue-800">
+                        {selectedMember.first_name} {selectedMember.middle_name && selectedMember.middle_name + ' '} {selectedMember.last_name}
+                      </h4>
+                      <p className="text-sm text-blue-600">@{selectedMember.username}</p>
                       <button
                         onClick={() => setSelectedMember(null)}
                         className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
@@ -809,12 +817,14 @@ return (
                     >
                       <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                         <span className="text-gray-600 font-semibold">
-                          {member.username?.charAt(0)?.toUpperCase()}
+                          {member.first_name?.charAt(0)?.toUpperCase() || member.username?.charAt(0)?.toUpperCase()}
                         </span>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-800">{member.username}</p>
-                        <p className="text-sm text-gray-600">Member</p>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">
+                          {member.first_name} {member.middle_name && member.middle_name + ' '} {member.last_name}
+                        </p>
+                        <p className="text-sm text-gray-600">@{member.username}</p>
                       </div>
                     </div>
                   ))}
