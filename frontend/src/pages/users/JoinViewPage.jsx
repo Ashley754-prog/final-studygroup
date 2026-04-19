@@ -221,6 +221,11 @@ export default function JoinViewPage() {
 
     socketRef.current.emit("send_message", msg);
     setInputText("");
+    
+    // Auto-scroll to bottom after sending message
+    setTimeout(() => {
+      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   // --- File upload ---
@@ -243,6 +248,11 @@ const handleFileUpload = async (e) => {
     };
     socketRef.current.emit("send_message", msg);
     e.target.value = null;
+
+    // Auto-scroll to bottom after uploading file
+    setTimeout(() => {
+      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
 
     toast.success(`File "${file.name}" uploaded successfully!`);
   } catch {
