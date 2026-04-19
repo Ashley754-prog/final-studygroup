@@ -12,13 +12,12 @@ import {
   PlusIcon,
   BellAlertIcon,
 } from "@heroicons/react/24/outline";
-import { getUser, validateUserData } from "../../utils/auth";
 
 export default function JoinViewPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  const currentUser = validateUserData(getUser());
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = currentUser?.id;
   const userName = currentUser?.username || "You";
 
