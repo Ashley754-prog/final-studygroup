@@ -50,10 +50,15 @@ export default function JoinViewPage() {
   const fileInputRef = useRef(null);
 
   const [title, setTitle] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [meetingDate, setMeetingDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  
+  // For backward compatibility with existing code
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
 
   const [meetingType, setMeetingType] = useState("physical");
   const [meetingLink, setMeetingLink] = useState("");
@@ -167,28 +172,35 @@ export default function JoinViewPage() {
     socket.emit("join_group", parseInt(groupId));
 
     // --- Socket listeners ---
-    socket.on("receive_message", (data) => {
-      const { groupId: receivedGroupId, message } = data;
-      if (parseInt(receivedGroupId) === parseInt(groupId)) {
-        setMessages(prev => [...prev, message]);
+socket.on("receive_message", (data) => {
+  const { groupId: receivedGroupId, message } = data;
+  if (parseInt(receivedGroupId) === parseInt(groupId)) {
+    setMessages(prev => [...prev, message]);
+    
+    // Auto-scroll to bottom for new messages
+    setTimeout(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
-    });
+    }, 100);
+  }
+});
 
-    socket.on("new_schedule", (newSchedule) => {
-      if (newSchedule.groupId === parseInt(groupId)) {
-        setEvents(prev => {
-          if (prev.some(e => e.id === newSchedule.id)) return prev;
-          return [...prev, {
-            ...newSchedule,
-            start: new Date(newSchedule.start),
-            end: new Date(newSchedule.end),
-            meetingType: (newSchedule.meetingType || "physical").toLowerCase(),
-            meetingLink: newSchedule.meetingLink || null,
-            color: "bg-yellow-100"
-          }];
-        });
-      }
+socket.on("new_schedule", (newSchedule) => {
+  if (newSchedule.groupId === parseInt(groupId)) {
+    setEvents(prev => {
+      if (prev.some(e => e.id === newSchedule.id)) return prev;
+      return [...prev, {
+        ...newSchedule,
+        start: new Date(newSchedule.start + 'Z'), // Force local timezone
+        end: new Date(newSchedule.end + 'Z'),     // Force local timezone
+        meetingType: (newSchedule.meetingType || "physical").toLowerCase(),
+        meetingLink: newSchedule.meetingLink || null,
+        color: "bg-yellow-100"
+      }];
     });
+  }
+});
 
     socket.on("newAnnouncement", (announcement) => {
       if (announcement.group_id === parseInt(groupId)) {
@@ -278,55 +290,66 @@ const handleFileUpload = async (e) => {
     }
   };
 
-  const handleCreateSchedule = async (e) => {
-    e.preventDefault();
+const handleCreateSchedule = async (e) => {
+  e.preventDefault();
 
-    if (!title || !start || !end) return toast.error("Fill all required fields!");
-    if (meetingType === "physical" && !location.trim()) {
-      return toast.error("Please enter a location for physical meetings!");
-    }
+  if (!title || !meetingDate || !startTime || !endTime) return toast.error("Fill all required fields!");
+  if (meetingType === "physical" && !location.trim()) {
+    return toast.error("Please enter a location for physical meetings!");
+  }
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return toast.error("Invalid start or end date/time!");
-    }
-
-    try {
+  try {
     const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    
+    // REAL FIX: Create proper Date objects and format correctly
+    const startDate = new Date(`${meetingDate} ${startTime}`);
+    const endDate = new Date(`${meetingDate} ${endTime}`);
+    
+    // Format to local MySQL datetime (YYYY-MM-DD HH:mm:ss)
+    const formatToLocalMySQL = (date) => {
+      const pad = (num) => String(num).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+    };
+    
     const payload = {
       title,
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
+      start: formatToLocalMySQL(startDate), // Send as local time string
+      end: formatToLocalMySQL(endDate),   // Send as local time string
       location: meetingType === "physical" ? location : "Online",
       description,
       meetingType,
       meetingLink: meetingType === "online" ? meetingLink : null
     };
 
-      const res = await axios.post(
-        `${API_BASE_URL}/api/calendar/group/${groupId}`,
-        payload
-      );
+    console.log('Schedule payload:', payload);
 
-      const newEvent = res.data.schedule;
-      socketRef.current.emit("schedule_created", { ...newEvent, groupId: parseInt(groupId) });
+    const res = await axios.post(
+      `${API_BASE_URL}/api/calendar/group/${groupId}`,
+      payload
+    );
 
-      setTitle(""); setStart(""); setEnd(""); setLocation(""); setDescription(""); setMeetingType("physical"); setMeetingLink(newEvent.meetingLink || "");
-      setShowModal(false);
+    const newEvent = res.data.schedule;
+    
+    // For socket, use the same formatted strings
+    socketRef.current.emit("schedule_created", { 
+      ...newEvent, 
+      groupId: parseInt(groupId),
+      start: formatToLocalMySQL(startDate),
+      end: formatToLocalMySQL(endDate)
+    });
 
-      if (newEvent.meetingLink) {
-        toast.success(`Study date created! Meeting link: ${newEvent.meetingLink}`);
-      } else {
-        toast.success("Study date created!");
-      }
+    // Reset fields
+    setTitle(""); setMeetingDate(""); setStartTime(""); setEndTime(""); 
+    setLocation(""); setDescription(""); setMeetingType("physical"); 
+    setMeetingLink(""); setShowModal(false);
 
-    } catch (err) {
-      console.error("Schedule creation failed:", err);
-      toast.error("Failed to create schedule. Check console for details.");
-    }
-  };
+    toast.success("Study date created!");
+
+  } catch (err) {
+    console.error("Schedule creation failed:", err);
+    toast.error("Failed to create schedule.");
+  }
+};
 
   const handlePostAnnouncement = async () => {
     try {
@@ -585,7 +608,7 @@ return (
                   msg.text
                 )}
                 <p className="text-xs opacity-70 mt-1">
-                  {msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                {msg.time || ""}
                 </p>
               </div>
             </div>
@@ -613,7 +636,7 @@ return (
 {/* Schedule Modal — Perfectly Centered */}
 {showModal && (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-8 w-96 shadow-2xl">
+    <div className="bg-white rounded-xl p-8 w-96 shadow-2xl max-h-[90vh] overflow-y-auto hide-scrollbar mb-15 my-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-[#800000] tracking-wide">Schedule Meeting</h2>
         <button onClick={() => setShowModal(false)}>
@@ -631,28 +654,47 @@ return (
           required
         />
 
-        <input
-          type="datetime-local"
-          value={start}
-          onChange={e => setStart(e.target.value)}
-          className="w-full p-3 border rounded-lg"
-          required
-        />
+        <div>
+          <label className="block text-gray-700 font-medium mb-2">Meeting Date</label>
+          <input
+            type="date"
+            value={meetingDate}
+            onChange={e => setMeetingDate(e.target.value)}
+            className="w-full p-3 border rounded-lg"
+            min={new Date().toISOString().split('T')[0]} // Prevent past dates
+            required
+          />
+        </div>
 
-        <input
-          type="datetime-local"
-          value={end}
-          onChange={e => setEnd(e.target.value)}
-          className="w-full p-3 border rounded-lg"
-          required
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">Start Time</label>
+            <input
+              type="time"
+              value={startTime}
+              onChange={e => setStartTime(e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">End Time</label>
+            <input
+              type="time"
+              value={endTime}
+              onChange={e => setEndTime(e.target.value)}
+              className="w-full p-3 border rounded-lg"
+              required
+            />
+          </div>
+        </div>
 
         <textarea
           placeholder="Description (optional)"
           value={description}
           onChange={e => setDescription(e.target.value)}
-          className="w-full p-3 border rounded-lg h-24"
-        ></textarea>
+          className="w-full border px-4 py-2 rounded-lg mb-4 h-24"
+        />
 
 {/* Meeting Type Selector */}
 <div className="flex items-center gap-4">
