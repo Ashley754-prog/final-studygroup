@@ -60,20 +60,6 @@ function App() {
     const handleStorageChange = (e) => {
       if (e.key === "user" || e.key === "token" || e.key === "userSessionTimestamp") {
         console.log("Storage changed in another tab, revalidating session");
-        // Force immediate reload if user data changed
-        if (e.key === "user" && e.newValue) {
-          try {
-            const newUser = JSON.parse(e.newValue);
-            const currentTabUser = sessionStorage.getItem("tabUser");
-            if (currentTabUser && newUser.id.toString() !== currentTabUser) {
-              console.log("User changed in another tab, forcing reload");
-              window.location.reload();
-              return;
-            }
-          } catch (err) {
-            console.error("Error parsing new user data:", err);
-          }
-        }
         validateSession();
       }
     };

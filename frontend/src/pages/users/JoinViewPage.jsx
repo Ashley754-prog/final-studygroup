@@ -357,22 +357,6 @@ return (
 
         {/* Members Section */}
         <div className="flex flex-col gap-2">
-          {/* Member usernames - Always Clickable */}
-          <div className="flex flex-wrap gap-3 mb-3">
-            {group.members?.slice(0, 5).map((m, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200 transition-colors"
-                onClick={() => {
-                  setSelectedMember(m);
-                  setShowMembersModal(true);
-                }}
-              >
-                {m.username}
-              </div>
-            ))}
-          </div>
-
           {/* Leave Group Button */}
           <div className="flex gap-2 -mt-3 justify-end">
           <div 
@@ -383,7 +367,7 @@ return (
             }}
           >
             <UserGroupIcon className="w-7 h-7 text-[#800000]" />
-            <span className="font-medium">Members ({group.current_members})</span>
+            <span className="font-medium">Members ({(group.current_members || 0) + 1})</span>
           </div>
             <button
               className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700"
@@ -768,12 +752,47 @@ return (
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
               onClick={() => setShowMembersModal(false)}
             >
-              ✕
+              &#10005;
             </button>
             
             <h2 className="text-xl font-bold text-maroon mb-4">Group Members</h2>
             
             <div className="space-y-4">
+              {/* Member usernames - Clickable chips */}
+              <div className="mb-4">
+                <h3 className="font-semibold text-lg mb-2">Quick Access</h3>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {/* Group Creator chip */}
+                  <div
+                    className="flex items-center gap-2 bg-blue-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-blue-200 transition-colors"
+                    onClick={() => {
+                      setSelectedMember({
+                        id: group.created_by,
+                        username: group.creator_name?.split(' ')[1] || group.creator_name,
+                        first_name: group.creator_name?.split(' ')[0] || 'Creator',
+                        last_name: group.creator_name?.split(' ').slice(1).join(' ') || '',
+                        middle_name: ''
+                      });
+                    }}
+                  >
+                    {group.creator_name}
+                  </div>
+                  
+                  {/* Member chips */}
+                  {group.members?.slice(0, 5).map((m, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200 transition-colors"
+                      onClick={() => {
+                        setSelectedMember(m);
+                      }}
+                    >
+                      {m.username}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
               {/* Show selected member details */}
               {selectedMember && (
                 <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -799,14 +818,36 @@ return (
                 </div>
               )}
               
-              <div className="mb-4">
-                <h3 className="font-semibold text-lg mb-2">Group Creator</h3>
-                <p className="text-gray-700">{group.creator_name || "Unknown"}</p>
-              </div>
-              
               <div>
-                <h3 className="font-semibold text-lg mb-2">Members ({group.members?.length || 0})</h3>
+                <h3 className="font-semibold text-lg mb-2">All Members ({(group.members?.length || 0) + 1})</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                  {/* Group Creator */}
+                  <div
+                    className={`flex items-center gap-3 bg-blue-100 px-4 py-3 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors ${
+                      selectedMember?.id === group.created_by ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                    onClick={() => {
+                      setSelectedMember({
+                        id: group.created_by,
+                        username: group.creator_name?.split(' ')[1] || group.creator_name,
+                        first_name: group.creator_name?.split(' ')[0] || 'Creator',
+                        last_name: group.creator_name?.split(' ').slice(1).join(' ') || '',
+                        middle_name: ''
+                      });
+                    }}
+                  >
+                    <div className="w-10 h-10 bg-blue-300 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold">
+                        {group.creator_name?.charAt(0)?.toUpperCase() || 'C'}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-800">{group.creator_name}</p>
+                      <p className="text-sm text-blue-600">Group Creator</p>
+                    </div>
+                  </div>
+                  
+                  {/* Regular members */}
                   {group.members?.map((member, i) => (
                     <div
                       key={i}
