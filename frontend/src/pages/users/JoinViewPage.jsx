@@ -17,7 +17,24 @@ export default function JoinViewPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  // Get fresh user data and validate it
+  const getFreshUserData = () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return null;
+      
+      const user = JSON.parse(storedUser);
+      if (!user.id) return null;
+      
+      return user;
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      localStorage.removeItem("user");
+      return null;
+    }
+  };
+
+  const currentUser = getFreshUserData();
   const userId = currentUser?.id;
   const userName = currentUser?.username || "You";
 
@@ -45,6 +62,7 @@ export default function JoinViewPage() {
   const [announceDesc, setAnnounceDesc] = useState("");
 
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
   const closeModal = () => setSelectedAnnouncement(null);
 
   const lastMessageRef = useRef(null);
@@ -54,6 +72,15 @@ export default function JoinViewPage() {
   // --- Load group, messages, schedules & setup socket ---
   useEffect(() => {
     if (!userId || !groupId) return;
+    
+    // Validate user data on component mount
+    const freshUser = getFreshUserData();
+    if (!freshUser || freshUser.id !== userId) {
+      console.error("User data mismatch detected, redirecting to login");
+      localStorage.removeItem("user");
+      navigate("/login");
+      return;
+    }
 
     const loadGroup = async () => {
       try {
@@ -328,36 +355,30 @@ return (
           <span className="bg-yellow-400 text-[#800000] px-6 py-3 rounded-full font-semibold text-lg">{group.topic}</span>
         </div>
 
-        {/* Members Section - Clickable */}
-        <div 
-          className="flex flex-col gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-          onClick={() => setShowMembersModal(true)}
-        >
-          <div className="flex items-center gap-2 text-sm text-gray-800 mb-2">
-            <UserGroupIcon className="w-7 h-7 text-[#800000]" />
-            <span className="font-medium">Members ({group.current_members})</span>
-          </div>
-          
-          {/* Member usernames */}
+        {/* Members Section */}
+        <div className="flex flex-col gap-2">
+          {/* Member usernames - Always Clickable */}
           <div className="flex flex-wrap gap-3 mb-3">
             {group.members?.slice(0, 5).map((m, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium"
+                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => {
+                  setSelectedMember(m);
+                  setShowMembersModal(true);
+                }}
               >
                 {m.username}
               </div>
             ))}
-            {group.members?.length > 5 && (
-              <div className="text-sm text-blue-600 font-medium">
-                +{group.members.length - 5} more members
-              </div>
-            )}
           </div>
-        </div>
 
           {/* Leave Group Button */}
           <div className="flex gap-2 -mt-3 justify-end">
+          <div className="flex items-center gap-2 text-sm text-gray-800 mb-2 mr-28">
+            <UserGroupIcon className="w-7 h-7 text-[#800000]" />
+            <span className="font-medium">Members ({group.current_members})</span>
+          </div>
             <button
               className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700"
               onClick={() => {
@@ -513,7 +534,7 @@ return (
 
         {/* Announcement Modal */}
         {selectedAnnouncement && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-11/12 md:w-1/2 p-6 relative max-h-[80vh] overflow-y-auto">
               <button
                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -532,6 +553,7 @@ return (
           </div>
         )}
       </div>
+    </div>
 
     {/* RIGHT PANEL: Chat */}
     <aside className="w-96 border-l border-gray-300 bg-gray-50 flex flex-col">
@@ -583,7 +605,7 @@ return (
 
 {/* Schedule Modal — Perfectly Centered */}
 {showModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-white rounded-xl p-8 w-96 shadow-2xl">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-[#800000] tracking-wide">Schedule Meeting</h2>
@@ -684,7 +706,7 @@ return (
 
 {/* Announcements Modal */}
 {showAnnouncementsModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-white rounded-xl p-8 w-96 shadow-2xl">
 
       {/* Header */}
@@ -746,6 +768,29 @@ return (
             <h2 className="text-xl font-bold text-maroon mb-4">Group Members</h2>
             
             <div className="space-y-4">
+              {/* Show selected member details */}
+              {selectedMember && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-lg">
+                        {selectedMember.username?.charAt(0)?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-800">{selectedMember.username}</h4>
+                      <p className="text-sm text-blue-600">Member</p>
+                      <button
+                        onClick={() => setSelectedMember(null)}
+                        className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Back to all members
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="mb-4">
                 <h3 className="font-semibold text-lg mb-2">Group Creator</h3>
                 <p className="text-gray-700">{group.creator_name || "Unknown"}</p>
@@ -757,7 +802,10 @@ return (
                   {group.members?.map((member, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg"
+                      className={`flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors ${
+                        selectedMember?.id === member.id ? 'ring-2 ring-blue-500' : ''
+                      }`}
+                      onClick={() => setSelectedMember(member)}
                     >
                       <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                         <span className="text-gray-600 font-semibold">

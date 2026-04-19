@@ -3,6 +3,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { RealtimeProvider } from "./context/RealtimeContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
+import { validateUserSession } from "./utils/auth.js";
+import { useEffect } from "react";
 
 // Auth Pages
 import LoginPage from "./pages/auth/LoginPage.jsx";
@@ -38,6 +40,14 @@ import PageLayout from "./layouts/PageLayout.jsx";
 import AdminPrivateRoute from "./routes/AdminPrivateRoute.jsx";
 
 function App() {
+  // Global session validation - runs once when app loads
+  useEffect(() => {
+    const isValid = validateUserSession();
+    if (!isValid) {
+      console.log("Invalid user session detected, user will need to re-authenticate");
+    }
+  }, []);
+
   return (
     <RealtimeProvider>
       <NotificationProvider>
