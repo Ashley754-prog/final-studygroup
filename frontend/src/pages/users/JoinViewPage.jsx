@@ -11,6 +11,7 @@ import {
   ChatBubbleLeftEllipsisIcon,
   PlusIcon,
   BellAlertIcon,
+  FaceSmileIcon,
 } from "@heroicons/react/24/outline";
 
 export default function JoinViewPage() {
@@ -49,6 +50,10 @@ export default function JoinViewPage() {
   const [showAnnouncementsModal, setShowAnnouncementsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteAnnouncementModal, setShowDeleteAnnouncementModal] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Simple emoji list for native emoji picker
+  const commonEmojis = ['😀', '😃', '😄', '😁', '😊', '😍', '🥰', '😘', '😂', '🤣', '😉', '😌', '😇', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮', '😯', '😲', '🥺', '😭', '😤', '😠', '🤬', '🤯', '😱', '🥵', '🥶', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤙', '💪', '🙏'];
   const fileInputRef = useRef(null);
 
   // Selection states
@@ -240,6 +245,11 @@ export default function JoinViewPage() {
     };
   }, [groupId, userId, userName, navigate]);
 
+  const onEmojiClick = (emoji) => {
+    // Append emoji to current text
+    setInputText(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
 
   const sendMessage = () => {
     if (!inputText.trim() && !fileInputRef.current?.files?.[0]) return;
@@ -264,38 +274,38 @@ export default function JoinViewPage() {
   };
 
   // --- File upload ---
-const handleFileUpload = async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const res = await axios.post(`${API_BASE_URL}/api/upload`, formData);
-    const msg = {
-      groupId: parseInt(groupId),
-      sender: userId,
-      text: file.name,
-      fileLink: res.data.fileUrl,
-      time: new Date().toISOString()
-    };
-    socketRef.current.emit("send_message", msg);
-    e.target.value = null;
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const res = await axios.post(`${API_BASE_URL}/api/upload`, formData);
+      const msg = {
+        groupId: parseInt(groupId),
+        sender: userId,
+        text: file.name,
+        fileLink: res.data.fileUrl,
+        time: new Date().toISOString()
+      };
+      socketRef.current.emit("send_message", msg);
+      e.target.value = null;
 
-    // Auto-scroll to bottom after uploading file
-    setTimeout(() => {
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
-      }
-    }, 100);
+      // Auto-scroll to bottom after uploading file
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
+        }
+      }, 100);
 
-    toast.success(`File "${file.name}" uploaded successfully!`);
-  } catch {
-    toast.error(`Failed to upload file "${file.name}".`);
-  }
-};
+      toast.success(`File "${file.name}" uploaded successfully!`);
+    } catch {
+      toast.error(`Failed to upload file "${file.name}".`);
+    }
+  };
 
   // --- Join group ---
   const handleJoinGroup = async () => {
@@ -499,6 +509,23 @@ useEffect(() => {
     }
   }, 0);
 }, [messages]);
+
+// Close emoji picker when clicking outside
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (showEmojiPicker && !event.target.closest('.emoji-picker-container') && !event.target.closest('.emoji-button')) {
+      setShowEmojiPicker(false);
+    }
+  };
+
+  if (showEmojiPicker) {
+    document.addEventListener('mousedown', handleClickOutside);
+  }
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, [showEmojiPicker]);
 
   if (!group) return <div className="flex items-center font-bold justify-center min-h-screen">Loading group...</div>;
 
@@ -863,66 +890,59 @@ return (
                 ) : (
                   msg.text
                 )}
-                <p className="text-xs opacity-70 mt-1">
-                  {(() => {
-                    if (!msg.time) return "";
-                    console.log("Chat time debug:", msg.time); // Debug log
-                    try {
-                      // Check if it's a time-only string like "11:49 AM"
-                      if (typeof msg.time === 'string' && msg.time.includes(':') && (msg.time.includes('AM') || msg.time.includes('PM'))) {
-                        // It's already a formatted time, apply timezone offset for local dev
-                        const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
-                        if (isLocalDev) {
-                          // Parse the time and add 16 hours for local development
-                          const [time, period] = msg.time.split(' ');
-                          const [hours, minutes] = time.split(':');
-                          let hour24 = parseInt(hours);
-                          if (period === 'PM' && hour24 !== 12) hour24 += 12;
-                          if (period === 'AM' && hour24 === 12) hour24 = 0;
-                          
-                          // Add 16 hours and wrap around 24
-                          hour24 = (hour24 + 16) % 24;
-                          
-                          // Convert back to 12-hour format
-                          const newPeriod = hour24 >= 12 ? 'PM' : 'AM';
-                          const newHour = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
-                          return `${newHour}:${minutes} ${newPeriod}`;
-                        }
-                        return msg.time;
-                      }
-                      
-                      const date = new Date(msg.time);
-                      if (isNaN(date.getTime())) {
-                        console.log("Invalid date detected:", msg.time);
-                        return "";
-                      }
-                      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                    } catch (error) {
-                      console.log("Date parsing error:", error, msg.time);
-                      return "";
-                    }
-                  })()}
-                </p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="p-4 border-t flex gap-2">
+      <div className="p-4 border-t flex gap-2 relative">
         <button onClick={() => fileInputRef.current.click()} className="p-2 hover:bg-gray-200 rounded">
           <PaperClipIcon className="w-6 h-6 text-gray-600" />
         </button>
         <input ref={fileInputRef} type="file" onChange={handleFileUpload} className="hidden" />
-        <input
-          type="text"
-          value={inputText}
-          onChange={e => setInputText(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-          className="flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#800000] outline-none text-sm"
-        />
+        
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendMessage()}
+            placeholder="Type a message..."
+            className="w-full px-4 py-2.5 pr-12 border rounded-lg focus:ring-2 focus:ring-[#800000] outline-none text-sm"
+          />
+          <button 
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)} 
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-200 rounded"
+          >
+            <FaceSmileIcon className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+        
         <button onClick={sendMessage} className="bg-[#800000] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[#600000] text-sm">Send</button>
+
+        {/* Simple Emoji Picker */}
+        {showEmojiPicker && (
+          <div 
+            className="absolute bottom-16 left-8 z-50 bg-white rounded-lg shadow-lg border p-3 w-64 max-h-64 overflow-y-auto emoji-picker-container"
+          >
+            <div className="grid grid-cols-8 gap-1">
+              {commonEmojis.map((emoji, index) => (
+                <div
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEmojiClick(emoji);
+                  }}
+                  className="text-xl p-1 hover:bg-gray-100 rounded cursor-pointer transition-colors flex items-center justify-center select-none"
+                  style={{ minHeight: '30px', minWidth: '30px' }}
+                >
+                  {emoji}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
 
