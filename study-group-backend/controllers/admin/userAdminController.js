@@ -139,11 +139,41 @@ export const restoreUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Update user status back to active
-    await pool.execute(
-      "UPDATE users SET status = 'active' WHERE id = ?",
-      [id]
-    );
+    // First get current user data to see what needs to be restored
+    const [currentUser] = await pool.execute("SELECT email, username FROM users WHERE id = ?", [id]);
+    
+    if (currentUser.length > 0) {
+      const user = currentUser[0];
+      let originalEmail = user.email;
+      let originalUsername = user.username;
+      
+      // Remove deleted_ prefix if it exists
+      if (originalEmail.startsWith('deleted_')) {
+        const parts = originalEmail.split('_');
+        if (parts.length >= 3) {
+          originalEmail = parts.slice(2).join('_');
+        }
+      }
+      
+      if (originalUsername.startsWith('deleted_')) {
+        const parts = originalUsername.split('_');
+        if (parts.length >= 3) {
+          originalUsername = parts.slice(2).join('_');
+        }
+      }
+      
+      // Restore both status and original email/username
+      await pool.execute(
+        "UPDATE users SET status = 'active', email = ?, username = ? WHERE id = ?",
+        [originalEmail, originalUsername, id]
+      );
+    } else {
+      // Fallback - just restore status
+      await pool.execute(
+        "UPDATE users SET status = 'active' WHERE id = ?",
+        [id]
+      );
+    }
 
     res.json({ message: "User restored successfully!" });
   } catch (err) {
