@@ -1,7 +1,7 @@
 // src/pages/admin/ManageGroups.jsx
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon, EyeIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
@@ -10,8 +10,11 @@ import { useRealtime } from "../../context/RealtimeContext";
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState([]);
+  const [filteredGroups, setFilteredGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   
   const [confirmModal, setConfirmModal] = useState({
@@ -55,6 +58,7 @@ const fetchGroups = async () => {
     }));
 
     setGroups(mappedGroups);
+    setFilteredGroups(mappedGroups);
   } catch (err) {
     console.error(err);
     toast.error("Failed to fetch groups");
@@ -68,6 +72,61 @@ const fetchGroups = async () => {
 useEffect(() => {
   fetchGroups(); // initial load
 }, []);
+
+// Apply search and filters
+useEffect(() => {
+  let filtered = [...groups];
+
+  // Apply search filter
+  if (searchTerm.trim()) {
+    filtered = filtered.filter(group => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        group.group_name?.toLowerCase().includes(searchLower) ||
+        group.course?.toLowerCase().includes(searchLower) ||
+        group.location?.toLowerCase().includes(searchLower) ||
+        (group.creator_name || group.created_by)?.toLowerCase().includes(searchLower)
+      );
+    });
+  }
+
+  // Apply date filter
+  if (dateFilter !== "all") {
+    const now = new Date();
+    
+    switch (dateFilter) {
+      case "today":
+        filtered = filtered.filter(group => {
+          const groupDate = new Date(group.created_at);
+          return groupDate.toDateString() === now.toDateString();
+        });
+        break;
+      case "week":
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(group => {
+          const groupDate = new Date(group.created_at);
+          return groupDate >= weekAgo;
+        });
+        break;
+      case "month":
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(group => {
+          const groupDate = new Date(group.created_at);
+          return groupDate >= monthAgo;
+        });
+        break;
+      case "year":
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        filtered = filtered.filter(group => {
+          const groupDate = new Date(group.created_at);
+          return groupDate >= yearAgo;
+        });
+        break;
+    }
+  }
+
+  setFilteredGroups(filtered);
+}, [groups, searchTerm, dateFilter]);
 
 // Real-time updates using RealtimeContext
 const { socket } = useRealtime();
@@ -199,16 +258,6 @@ const submitDecline = async (remarks) => {
 
   if (loading) return <div className="p-10 text-center text-xl">Loading groups...</div>;
 
-  const filteredGroups = groups.filter((g) => {
-    const term = search.toLowerCase();
-    return (
-      g.group_name.toLowerCase().includes(term) ||
-      g.course.toLowerCase().includes(term) ||
-      g.location.toLowerCase().includes(term) ||
-      (g.creator_name || g.created_by).toLowerCase().includes(term)
-    );
-  });
-
   const pending = filteredGroups.filter((g) => g.status === "pending");
   const approved = filteredGroups.filter((g) => g.status === "approved");
   const declined = filteredGroups.filter((g) => g.status === "declined");
@@ -221,18 +270,121 @@ const submitDecline = async (remarks) => {
             <UsersIcon className="w-10 h-10" /> Manage Study Groups
           </h1>
 
-        {/* Search / Filter */}
-        <div className="mb-6 flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search by group, course, location, or creator..."
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button onClick={() => setSearch("")} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300">
-            Clear
-          </button>
+        {/* Search and Filter Controls */}
+        <div className="bg-white p-6 rounded-xl shadow mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by group name, course, location, or creator..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Date Filter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className="flex items-center gap-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <FunnelIcon className="w-5 h-5 text-gray-600" />
+                <span className="font-medium text-gray-700">
+                  {dateFilter === "all" ? "All Time" :
+                   dateFilter === "today" ? "Today" :
+                   dateFilter === "week" ? "This Week" :
+                   dateFilter === "month" ? "This Month" :
+                   "This Year"}
+                </span>
+                <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+              </button>
+
+              {showFilterDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setDateFilter("all");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "all" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      All Time
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("today");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "today" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("week");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "week" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Week
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("month");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "month" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("year");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "year" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Year
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Clear Filters */}
+            {(searchTerm || dateFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setDateFilter("all");
+                }}
+                className="px-4 py-3 bg-red-100 text-red-600 border border-red-300 rounded-lg hover:bg-red-200 font-medium"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* Results Summary */}
+          <div className="mt-4 text-sm text-gray-600">
+            Showing {filteredGroups.length} of {groups.length} groups
+            {searchTerm && ` matching "${searchTerm}"`}
+            {dateFilter !== "all" && ` created ${dateFilter === "today" ? "today" : `this ${dateFilter}`}`}
+          </div>
         </div>
 
         <div className="space-y-8">

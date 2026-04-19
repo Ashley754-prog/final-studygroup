@@ -66,6 +66,7 @@ export default function JoinViewPage() {
   const closeModal = () => setSelectedAnnouncement(null);
 
   const lastMessageRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const socketRef = useRef(null);
 
@@ -224,7 +225,9 @@ export default function JoinViewPage() {
     
     // Auto-scroll to bottom after sending message
     setTimeout(() => {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
     }, 100);
   };
 
@@ -251,7 +254,9 @@ const handleFileUpload = async (e) => {
 
     // Auto-scroll to bottom after uploading file
     setTimeout(() => {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
+      }
     }, 100);
 
     toast.success(`File "${file.name}" uploaded successfully!`);
@@ -346,7 +351,9 @@ const handleFileUpload = async (e) => {
 
 useEffect(() => {
   setTimeout(() => {
-    lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, 0);
 }, [messages]);
 
@@ -562,12 +569,12 @@ return (
         <h3 className="font-semibold text-[#800000] text-base tracking-wide">Group Chat</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4" ref={lastMessageRef}>
+      <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4" ref={chatContainerRef}>
         {messages.map((msg, i) => {
           const isMe = msg.sender_id === userId;
           const isLast = i === messages.length - 1;
           return (
-            <div key={i} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+            <div key={i} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`} ref={isLast ? lastMessageRef : null}>
               <span className="text-xs text-gray-500 mb-1 font-medium">{msg.sender_name}</span>
               <div className={`px-4 py-2 rounded-2xl max-w-xs ${isMe ? "bg-[#800000] text-white" : "bg-gray-200"} text-sm leading-snug`}>
                 {msg.fileLink ? (

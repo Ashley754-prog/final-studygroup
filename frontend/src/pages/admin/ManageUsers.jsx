@@ -9,7 +9,10 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   LinkIcon,
-  PencilIcon
+  PencilIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronDownIcon
 } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -126,6 +129,7 @@ export default function ManageUsers() {
     );
   };
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
@@ -140,14 +144,35 @@ export default function ManageUsers() {
     user: null
   });
 
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+  // Helper function to format full name
+  const formatFullName = (user) => {
+    const parts = [];
+    if (user.first_name) parts.push(user.first_name);
+    if (user.middle_name) parts.push(user.middle_name);
+    if (user.last_name) parts.push(user.last_name);
+    return parts.length > 0 ? parts.join(' ') : user.username || 'Unknown User';
+  };
+
+  // Helper function to get initials
+  const getInitials = (user) => {
+    const fullName = formatFullName(user);
+    return fullName.charAt(0).toUpperCase() || 'U';
+  };
+
   // Fetch users
   const fetchUsers = async () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const res = await axios.get(`${API_BASE_URL}/api/user/admin-list`);
       // Filter out admin accounts for security - admins shouldn't manage other admins
-      const filteredUsers = (res.data || []).filter(user => !user.is_admin);
-      setUsers(filteredUsers);
+      const nonAdminUsers = (res.data || []).filter(user => !user.is_admin);
+      setUsers(nonAdminUsers);
+      setFilteredUsers(nonAdminUsers);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       toast.error("Failed to fetch users");
@@ -159,6 +184,61 @@ export default function ManageUsers() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Apply search and filters
+  useEffect(() => {
+    let filtered = [...users];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(user => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          user.username?.toLowerCase().includes(searchLower) ||
+          user.first_name?.toLowerCase().includes(searchLower) ||
+          user.last_name?.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply date filter
+    if (dateFilter !== "all") {
+      const now = new Date();
+      
+      switch (dateFilter) {
+        case "today":
+          filtered = filtered.filter(user => {
+            const userDate = new Date(user.created_at);
+            return userDate.toDateString() === now.toDateString();
+          });
+          break;
+        case "week":
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          filtered = filtered.filter(user => {
+            const userDate = new Date(user.created_at);
+            return userDate >= weekAgo;
+          });
+          break;
+        case "month":
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          filtered = filtered.filter(user => {
+            const userDate = new Date(user.created_at);
+            return userDate >= monthAgo;
+          });
+          break;
+        case "year":
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          filtered = filtered.filter(user => {
+            const userDate = new Date(user.created_at);
+            return userDate >= yearAgo;
+          });
+          break;
+      }
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, dateFilter]);
 
   // Real-time updates using RealtimeContext
   const { socket } = useRealtime();
@@ -250,20 +330,137 @@ export default function ManageUsers() {
           Manage Users
         </h1>
 
+        {/* Search and Filter Controls */}
+        <div className="bg-white p-6 rounded-xl shadow mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by username, name, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Date Filter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className="flex items-center gap-2 px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <FunnelIcon className="w-5 h-5 text-gray-600" />
+                <span className="font-medium text-gray-700">
+                  {dateFilter === "all" ? "All Time" :
+                   dateFilter === "today" ? "Today" :
+                   dateFilter === "week" ? "This Week" :
+                   dateFilter === "month" ? "This Month" :
+                   "This Year"}
+                </span>
+                <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+              </button>
+
+              {showFilterDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setDateFilter("all");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "all" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      All Time
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("today");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "today" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("week");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "week" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Week
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("month");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "month" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateFilter("year");
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        dateFilter === "year" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      This Year
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Clear Filters */}
+            {(searchTerm || dateFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setDateFilter("all");
+                }}
+                className="px-4 py-3 bg-red-100 text-red-600 border border-red-300 rounded-lg hover:bg-red-200 font-medium"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* Results Summary */}
+          <div className="mt-4 text-sm text-gray-600">
+            Showing {filteredUsers.length} of {users.length} users
+            {searchTerm && ` matching "${searchTerm}"`}
+            {dateFilter !== "all" && ` from ${dateFilter === "today" ? "today" : `this ${dateFilter}`}`}
+          </div>
+        </div>
+
         <div className="grid gap-8">
           {/* Active Users Section */}
           <div>
             <h2 className="text-2xl font-bold text-maroon mb-4 flex items-center gap-2">
               <CheckCircleIcon className="w-6 h-6 text-green-600" />
-              Active Users ({users.filter(u => u.status === 'active').length})
+              Active Users ({filteredUsers.filter(u => u.status === 'active').length})
             </h2>
             <div className="grid gap-5">
-              {users.filter(u => u.status === 'active').length === 0 ? (
+              {filteredUsers.filter(u => u.status === 'active').length === 0 ? (
                 <p className="text-gray-500 bg-white p-8 rounded-xl text-center shadow">
                   No active users found
                 </p>
               ) : (
-                users.filter(u => u.status === 'active').map((user) => {
+                filteredUsers.filter(u => u.status === 'active').map((user) => {
                   const isInactive = user.status !== "active";
                   return (
                     <div
@@ -277,11 +474,11 @@ export default function ManageUsers() {
                             isInactive ? "bg-gray-400" : "bg-gray-200"
                           }`}
                         >
-                          {user.username?.[0]?.toUpperCase() || user.first_name?.[0] || "U"}
+                          {getInitials(user)}
                         </div>
                         <div>
                           <h3 className="text-xl font-bold text-gray-800">
-                            {user.username || `${user.first_name} ${user.last_name}`}
+                            {formatFullName(user)}
                           </h3>
                           <p className="text-gray-600 flex items-center gap-2">
                             <EnvelopeIcon className="w-5 h-5" /> {user.email}
@@ -332,15 +529,15 @@ export default function ManageUsers() {
       <div>
         <h2 className="text-2xl font-bold text-maroon mb-4 flex items-center gap-2">
           <XCircleIcon className="w-6 h-6 text-red-600" />
-          Archived Users ({users.filter(u => u.status === 'banned').length})
+          Archived Users ({filteredUsers.filter(u => u.status === 'banned').length})
         </h2>
         <div className="grid gap-5">
-          {users.filter(u => u.status === 'banned').length === 0 ? (
+          {filteredUsers.filter(u => u.status === 'banned').length === 0 ? (
             <p className="text-gray-500 bg-white p-8 rounded-xl text-center shadow">
               No archived users found
             </p>
           ) : (
-            users.filter(u => u.status === 'banned').map((user) => (
+            filteredUsers.filter(u => u.status === 'banned').map((user) => (
               <div
                 key={user.id}
                 className="bg-white p-6 rounded-xl shadow flex justify-between items-center hover:shadow-lg transition opacity-75"
@@ -348,11 +545,11 @@ export default function ManageUsers() {
                 {/* User Info */}
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold bg-gray-400">
-                    {user.username?.[0]?.toUpperCase() || user.first_name?.[0] || "U"}
+                    {getInitials(user)}
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">
-                      {user.username || `${user.first_name} ${user.last_name}`}
+                      {formatFullName(user)}
                     </h3>
                     <p className="text-gray-600 flex items-center gap-2">
                       <EnvelopeIcon className="w-5 h-5" /> {user.email}
