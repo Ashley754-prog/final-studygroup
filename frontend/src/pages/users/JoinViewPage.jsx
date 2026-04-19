@@ -864,16 +864,8 @@ return (
                   msg.text
                 )}
                 <p className="text-xs opacity-70 mt-1">
-                {(() => {
-                  if (!msg.time) return "";
-                  const date = new Date(msg.time);
-                  if (date.toString() === "Invalid Date") return "";
-                  const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
-                  const offsetHours = isLocalDev ? 16 : 0;
-                  const adjustedDate = new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
-                  return adjustedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                })()}
-              </p>
+                  {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
               </div>
             </div>
           );
