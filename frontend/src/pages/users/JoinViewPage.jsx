@@ -28,6 +28,7 @@ export default function JoinViewPage() {
   const [inputText, setInputText] = useState("");
   const [announcements, setAnnouncements] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const [showAnnouncementsModal, setShowAnnouncements] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -329,16 +330,25 @@ return (
 
         {/* Members Section */}
         <div className="flex flex-col gap-2">
-          {/* Member usernames */}
+          {/* Member usernames - Clickable */}
           <div className="flex flex-wrap gap-3 mb-3">
-            {group.members?.map((m, i) => (
+            {group.members?.slice(0, 5).map((m, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium"
+                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => setShowMembersModal(true)}
               >
                 {m.username}
               </div>
             ))}
+            {group.members?.length > 5 && (
+              <button
+                onClick={() => setShowMembersModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                +{group.members.length - 5} more members
+              </button>
+            )}
           </div>
 
           {/* Leave Group Button */}
@@ -722,6 +732,50 @@ return (
   </div>
 )}
 
-    </div>
+      {/* Members Modal */}
+      {showMembersModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-11/12 md:w-1/2 p-6 relative max-h-[80vh] overflow-y-auto">
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowMembersModal(false)}
+            >
+              ✕
+            </button>
+            
+            <h2 className="text-xl font-bold text-maroon mb-4">Group Members</h2>
+            
+            <div className="space-y-4">
+              <div className="mb-4">
+                <h3 className="font-semibold text-lg mb-2">Group Creator</h3>
+                <p className="text-gray-700">{group.creator_name || "Unknown"}</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Members ({group.members?.length || 0})</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                  {group.members?.map((member, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg"
+                    >
+                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 font-semibold">
+                          {member.username?.charAt(0)?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">{member.username}</p>
+                        <p className="text-sm text-gray-600">Member</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   );
 }
