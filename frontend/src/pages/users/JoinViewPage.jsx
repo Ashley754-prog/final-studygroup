@@ -12,29 +12,13 @@ import {
   PlusIcon,
   BellAlertIcon,
 } from "@heroicons/react/24/outline";
+import { getUser, validateUserData } from "../../utils/auth";
 
 export default function JoinViewPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  // Get fresh user data and validate it
-  const getFreshUserData = () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser) return null;
-      
-      const user = JSON.parse(storedUser);
-      if (!user.id) return null;
-      
-      return user;
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("user");
-      return null;
-    }
-  };
-
-  const currentUser = getFreshUserData();
+  const currentUser = validateUserData(getUser());
   const userId = currentUser?.id;
   const userName = currentUser?.username || "You";
 
@@ -71,15 +55,6 @@ export default function JoinViewPage() {
   // --- Load group, messages, schedules & setup socket ---
   useEffect(() => {
     if (!userId || !groupId) return;
-    
-    // Validate user data on component mount
-    const freshUser = getFreshUserData();
-    if (!freshUser || freshUser.id !== userId) {
-      console.error("User data mismatch detected, redirecting to login");
-      localStorage.removeItem("user");
-      navigate("/login");
-      return;
-    }
 
     const loadGroup = async () => {
       try {
@@ -354,35 +329,36 @@ return (
           <span className="bg-yellow-400 text-[#800000] px-6 py-3 rounded-full font-semibold text-lg">{group.topic}</span>
         </div>
 
-        {/* Members Section */}
-        <div className="flex flex-col gap-2">
-          {/* Member usernames - Always Clickable */}
+        {/* Members Section - Clickable */}
+        <div 
+          className="flex flex-col gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          onClick={() => setShowMembersModal(true)}
+        >
+          <div className="flex items-center gap-2 text-sm text-gray-800 mb-2">
+            <UserGroupIcon className="w-7 h-7 text-[#800000]" />
+            <span className="font-medium">Members ({group.current_members})</span>
+          </div>
+          
+          {/* Member usernames */}
           <div className="flex flex-wrap gap-3 mb-3">
             {group.members?.slice(0, 5).map((m, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200 transition-colors"
-                onClick={() => setShowMembersModal(true)}
+                className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm font-medium"
               >
                 {m.username}
               </div>
             ))}
-            
-            {/* Always show "View Members" button */}
-            <button
-              onClick={() => setShowMembersModal(true)}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded-full border border-blue-300 hover:border-blue-500 transition-colors"
-            >
-              View All Members ({group.members?.length || 0})
-            </button>
+            {group.members?.length > 5 && (
+              <div className="text-sm text-blue-600 font-medium">
+                +{group.members.length - 5} more members
+              </div>
+            )}
           </div>
+        </div>
 
           {/* Leave Group Button */}
           <div className="flex gap-2 -mt-3 justify-end">
-          <div className="flex items-center gap-2 text-sm text-gray-800 mb-2 mr-28">
-            <UserGroupIcon className="w-7 h-7 text-[#800000]" />
-            <span className="font-medium">Members ({group.current_members})</span>
-          </div>
             <button
               className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700"
               onClick={() => {
@@ -557,7 +533,6 @@ return (
           </div>
         )}
       </div>
-    </div>
 
     {/* RIGHT PANEL: Chat */}
     <aside className="w-96 border-l border-gray-300 bg-gray-50 flex flex-col">
