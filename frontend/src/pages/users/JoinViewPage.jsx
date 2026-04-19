@@ -17,7 +17,24 @@ export default function JoinViewPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
 
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  // Get fresh user data and validate it
+  const getFreshUserData = () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) return null;
+      
+      const user = JSON.parse(storedUser);
+      if (!user.id) return null;
+      
+      return user;
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      localStorage.removeItem("user");
+      return null;
+    }
+  };
+
+  const currentUser = getFreshUserData();
   const userId = currentUser?.id;
   const userName = currentUser?.username || "You";
 
@@ -54,6 +71,15 @@ export default function JoinViewPage() {
   // --- Load group, messages, schedules & setup socket ---
   useEffect(() => {
     if (!userId || !groupId) return;
+    
+    // Validate user data on component mount
+    const freshUser = getFreshUserData();
+    if (!freshUser || freshUser.id !== userId) {
+      console.error("User data mismatch detected, redirecting to login");
+      localStorage.removeItem("user");
+      navigate("/login");
+      return;
+    }
 
     const loadGroup = async () => {
       try {
@@ -330,7 +356,7 @@ return (
 
         {/* Members Section */}
         <div className="flex flex-col gap-2">
-          {/* Member usernames - Clickable */}
+          {/* Member usernames - Always Clickable */}
           <div className="flex flex-wrap gap-3 mb-3">
             {group.members?.slice(0, 5).map((m, i) => (
               <div
@@ -341,14 +367,14 @@ return (
                 {m.username}
               </div>
             ))}
-            {group.members?.length > 5 && (
-              <button
-                onClick={() => setShowMembersModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                +{group.members.length - 5} more members
-              </button>
-            )}
+            
+            {/* Always show "View Members" button */}
+            <button
+              onClick={() => setShowMembersModal(true)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded-full border border-blue-300 hover:border-blue-500 transition-colors"
+            >
+              View All Members ({group.members?.length || 0})
+            </button>
           </div>
 
           {/* Leave Group Button */}
