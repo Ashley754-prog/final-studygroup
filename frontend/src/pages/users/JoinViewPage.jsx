@@ -201,13 +201,17 @@ export default function JoinViewPage() {
             ...newSchedule,
             start: (() => {
               const date = new Date(newSchedule.start);
-              // Add 16 hours to compensate for timezone conversion issue
-              return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+              // Only add 16 hours in local development, not in production
+              const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+              const offsetHours = isLocalDev ? 16 : 0;
+              return new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
             })(),
             end: (() => {
               const date = new Date(newSchedule.end);
-              // Add 16 hours to compensate for timezone conversion issue
-              return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+              // Only add 16 hours in local development, not in production
+              const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+              const offsetHours = isLocalDev ? 16 : 0;
+              return new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
             })(),
             meetingType: (newSchedule.meetingType || "physical").toLowerCase(),
             meetingLink: newSchedule.meetingLink || null,
@@ -694,13 +698,15 @@ return (
                     ...a,
                     start: (() => {
                       const date = new Date(a.created_at);
-                      // Add 16 hours to compensate for timezone conversion issue
-                      return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+                      const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+                      const offsetHours = isLocalDev ? 16 : 0;
+                      return new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
                     })(),
                     end: (() => {
                       const date = new Date(a.created_at);
-                      // Add 16 hours to compensate for timezone conversion issue
-                      return new Date(date.getTime() + (16 * 60 * 60 * 1000));
+                      const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+                      const offsetHours = isLocalDev ? 16 : 0;
+                      return new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
                     })(),
                     color: "bg-blue-100",
                     description: a.description || "",
@@ -821,7 +827,13 @@ return (
               </h2>
               <p className="text-gray-700 whitespace-pre-wrap">{selectedAnnouncement.description}</p>
               <p className="text-xs text-gray-400 mt-4">
-                {selectedAnnouncement.start.toLocaleString()}
+                {(() => {
+                  const date = new Date(selectedAnnouncement.start);
+                  const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+                  const offsetHours = isLocalDev ? 16 : 0;
+                  const adjustedDate = new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
+                  return adjustedDate.toLocaleString();
+                })()}
               </p>
             </div>
           </div>
@@ -852,8 +864,15 @@ return (
                   msg.text
                 )}
                 <p className="text-xs opacity-70 mt-1">
-                {msg.time || ""}
-                </p>
+                {(() => {
+                  if (!msg.time) return "";
+                  const date = new Date(msg.time);
+                  const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+                  const offsetHours = isLocalDev ? 16 : 0;
+                  const adjustedDate = new Date(date.getTime() + (offsetHours * 60 * 60 * 1000));
+                  return adjustedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                })()}
+              </p>
               </div>
             </div>
           );
