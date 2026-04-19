@@ -109,8 +109,9 @@ export const deleteUserById = async (req, res) => {
       
       // Mark user as deleted but keep record for audit
       // Use deleted_ prefix to maintain NOT NULL constraints
+      // Use 'banned' status since 'deleted' is not in the ENUM
       await connection.execute(
-        "UPDATE users SET email = CONCAT('deleted_', id, '_', email), username = CONCAT('deleted_', id, '_', username), status = 'deleted' WHERE id = ?", 
+        "UPDATE users SET email = CONCAT('deleted_', id, '_', email), username = CONCAT('deleted_', id, '_', username), status = 'banned' WHERE id = ?", 
         [id]
       );
     }
