@@ -552,7 +552,7 @@ return (
         <h3 className="font-semibold text-[#800000] text-base tracking-wide">Group Chat</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4" ref={lastMessageRef}>
         {messages.map((msg, i) => {
           const isMe = msg.sender_id === userId;
           const isLast = i === messages.length - 1;
@@ -747,9 +747,9 @@ return (
       {/* Members Modal */}
       {showMembersModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-11/12 md:w-1/2 p-6 relative max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg w-11/12 md:w-2/3 lg:w-1/2 p-6 relative max-h-[85vh] flex flex-col">
             <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 z-10"
               onClick={() => setShowMembersModal(false)}
             >
               &#10005;
@@ -757,7 +757,7 @@ return (
             
             <h2 className="text-xl font-bold text-maroon mb-4">Group Members</h2>
             
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {/* Member usernames - Clickable chips */}
               <div className="mb-4">
                 <h3 className="font-semibold text-lg mb-2">Quick Access</h3>
@@ -820,7 +820,7 @@ return (
               
               <div>
                 <h3 className="font-semibold text-lg mb-2">All Members ({(group.members?.length || 0) + 1})</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Group Creator */}
                   <div
                     className={`flex items-center gap-3 bg-blue-100 px-4 py-3 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors ${
