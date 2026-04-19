@@ -8,7 +8,8 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
-  LinkIcon
+  LinkIcon,
+  PencilIcon
 } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,13 +17,127 @@ import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
 import { useRealtime } from "../../context/RealtimeContext";
 
 export default function ManageUsers() {
+  // Edit User Form Component
+  const EditUserForm = ({ user, onSuccess, onCancel }) => {
+    const [formData, setFormData] = useState({
+      first_name: user.first_name || '',
+      middle_name: user.middle_name || '',
+      last_name: user.last_name || '',
+      username: user.username || '',
+      email: user.email || ''
+    });
+
+    const handleChange = (e) => {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        await axios.put(`${API_BASE_URL}/api/user/update/${user.id}`, formData);
+        onSuccess();
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to update user");
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input
+            type="text"
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+          <input
+            type="text"
+            name="middle_name"
+            value={formData.middle_name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input
+            type="text"
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Update User
+          </button>
+        </div>
+      </form>
+    );
+  };
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     userId: null,
-    username: ""
+    username: "",
+    deleteData: false // false = account only, true = everything
+  });
+
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    user: null
   });
 
   // Fetch users
@@ -86,14 +201,20 @@ export default function ManageUsers() {
   const confirmDeleteUser = async () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      await axios.delete(`${API_BASE_URL}/api/user/delete/${confirmModal.userId}`);
-      toast.success("User deleted successfully!");
+      const deleteUrl = `${API_BASE_URL}/api/user/delete/${confirmModal.userId}?deleteData=${confirmModal.deleteData}`;
+      await axios.delete(deleteUrl);
+      
+      const message = confirmModal.deleteData 
+        ? "User and all their data deleted successfully!"
+        : "User account deleted, groups and data preserved!";
+      
+      toast.success(message);
       fetchUsers();
-      setConfirmModal({ isOpen: false, userId: null, username: "" });
+      setConfirmModal({ isOpen: false, userId: null, username: "", deleteData: false });
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete user");
-      setConfirmModal({ isOpen: false, userId: null, username: "" });
+      setConfirmModal({ isOpen: false, userId: null, username: "", deleteData: false });
     }
   };
 
@@ -161,6 +282,15 @@ export default function ManageUsers() {
                       View Details
                     </button>
 
+                    {/* Edit User */}
+                    <button
+                      onClick={() => setEditModal({ isOpen: true, user: user })}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                    >
+                      <PencilIcon className="w-5 h-5" />
+                      Edit
+                    </button>
+
                     {/* Delete button always enabled for admin */}
                     <button
                       onClick={() => deleteUser(user.id, user.username)}
@@ -214,17 +344,87 @@ export default function ManageUsers() {
         </div>
       )}
 
+      {/* Edit User Modal */}
+      {editModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4">Edit User: {editModal.user?.username}</h2>
+            
+            <EditUserForm 
+              user={editModal.user} 
+              onSuccess={() => {
+                fetchUsers();
+                setEditModal({ isOpen: false, user: null });
+                toast.success("User updated successfully!");
+              }}
+              onCancel={() => setEditModal({ isOpen: false, user: null })}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal({ isOpen: false, userId: null, username: "" })}
-        onConfirm={confirmDeleteUser}
-        title="Delete User"
-        message={`Are you sure you want to delete the user "${confirmModal.username}"? This action cannot be undone.`}
-        confirmText="Delete User"
-        cancelText="Cancel"
-        type="danger"
-      />
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-red-800 mb-4">Delete User: {confirmModal.username}</h2>
+            <p className="text-gray-600 mb-6">Choose how you want to delete this user:</p>
+            
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="deleteOption"
+                  checked={!confirmModal.deleteData}
+                  onChange={() => setConfirmModal(prev => ({ ...prev, deleteData: false }))} 
+                  className="mr-3"
+                />
+                <div>
+                  <div className="font-semibold">Delete Account Only</div>
+                  <div className="text-sm text-gray-600">
+                    User account removed, but their groups and data are preserved and reassigned to other members.
+                  </div>
+                </div>
+              </label>
+              
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="deleteOption"
+                  checked={confirmModal.deleteData}
+                  onChange={() => setConfirmModal(prev => ({ ...prev, deleteData: true }))} 
+                  className="mr-3"
+                />
+                <div>
+                  <div className="font-semibold text-red-600">Delete Everything</div>
+                  <div className="text-sm text-gray-600">
+                    User account AND all their groups, messages, and data will be permanently deleted.
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, userId: null, username: "", deleteData: false })}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                  confirmModal.deleteData 
+                    ? "bg-red-600 hover:bg-red-700" 
+                    : "bg-yellow-600 hover:bg-yellow-700"
+                }`}
+              >
+                {confirmModal.deleteData ? "Delete Everything" : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // src/pages/admin/ManageGroups.jsx
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon } from "@heroicons/react/24/solid";
+import { CheckCircleIcon, XCircleIcon, UsersIcon, ClockIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ConfirmModal from "../../components/admin/ConfirmModal.jsx";
@@ -22,6 +22,18 @@ export default function ManageGroups() {
   });
 
   const [promptModal, setPromptModal] = useState({
+    isOpen: false,
+    groupId: null,
+    groupName: ""
+  });
+
+  const [viewModal, setViewModal] = useState({
+    isOpen: false,
+    group: null,
+    members: []
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     groupId: null,
     groupName: ""
@@ -138,6 +150,48 @@ const submitDecline = async (remarks) => {
   }
 };
 
+  const viewGroupDetails = async (groupId) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      
+      // Get group details
+      const [groupRes, membersRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/group/${groupId}`),
+        axios.get(`${API_BASE_URL}/api/group/${groupId}/members`)
+      ]);
+      
+      setViewModal({
+        isOpen: true,
+        group: groupRes.data.data || groupRes.data,
+        members: membersRes.data.data || membersRes.data || []
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch group details");
+    }
+  };
+
+  const deleteGroup = (groupId, groupName) => {
+    setDeleteModal({
+      isOpen: true,
+      groupId,
+      groupName
+    });
+  };
+
+  const confirmDeleteGroup = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.delete(`${API_BASE_URL}/api/group/${deleteModal.groupId}`);
+      toast.success("Group deleted successfully!");
+      fetchGroups();
+      setDeleteModal({ isOpen: false, groupId: null, groupName: "" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete group");
+      setDeleteModal({ isOpen: false, groupId: null, groupName: "" });
+    }
+  };
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -217,18 +271,30 @@ const submitDecline = async (remarks) => {
                         <td className="px-6 py-4">{group.creator_name || group.created_by}</td>
                         <td className="px-6 py-4">{group.current_members || 0} / {group.size}</td>
                         <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2">
+                          <div className="flex justify-center gap-1">
+                            <button 
+                              onClick={() => viewGroupDetails(group.id)} 
+                              className="bg-blue-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-700 transition text-sm"
+                            >
+                              <EyeIcon className="w-4 h-4" />
+                            </button>
                             <button 
                               onClick={() => handleApprove(group.id, group.group_name)} 
-                              className="bg-green-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition text-sm"
+                              className="bg-green-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-green-700 transition text-sm"
                             >
-                              <CheckCircleIcon className="w-4 h-4" /> Approve
+                              <CheckCircleIcon className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleDecline(group.id, group.group_name)} 
-                              className="bg-red-600 text-white px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition text-sm"
+                              className="bg-red-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-red-700 transition text-sm"
                             >
-                              <XCircleIcon className="w-4 h-4" /> Decline
+                              <XCircleIcon className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => deleteGroup(group.id, group.group_name)} 
+                              className="bg-orange-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-orange-700 transition text-sm"
+                            >
+                              <TrashIcon className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -258,12 +324,13 @@ const submitDecline = async (remarks) => {
                     <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
                     <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
                     <th className="text-center px-6 py-3 font-semibold text-gray-700">Status</th>
+                    <th className="text-center px-6 py-3 font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approved.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                         No approved groups
                       </td>
                     </tr>
@@ -279,6 +346,22 @@ const submitDecline = async (remarks) => {
                           <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
                             Approved
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-1">
+                            <button 
+                              onClick={() => viewGroupDetails(group.id)} 
+                              className="bg-blue-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-700 transition text-sm"
+                            >
+                              <EyeIcon className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => deleteGroup(group.id, group.group_name)} 
+                              className="bg-orange-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-orange-700 transition text-sm"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -306,12 +389,13 @@ const submitDecline = async (remarks) => {
                     <th className="text-left px-6 py-3 font-semibold text-gray-700">Creator</th>
                     <th className="text-left px-6 py-3 font-semibold text-gray-700">Members</th>
                     <th className="text-left px-6 py-3 font-semibold text-gray-700">Remarks</th>
+                    <th className="text-center px-6 py-3 font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {declined.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                         No declined groups
                       </td>
                     </tr>
@@ -333,6 +417,22 @@ const submitDecline = async (remarks) => {
                                 <strong>Reason:</strong> {group.remarks}
                               </p>
                             )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-1">
+                            <button 
+                              onClick={() => viewGroupDetails(group.id)} 
+                              className="bg-blue-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-700 transition text-sm"
+                            >
+                              <EyeIcon className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => deleteGroup(group.id, group.group_name)} 
+                              className="bg-orange-600 text-white px-2 py-2 rounded-lg flex items-center gap-1 hover:bg-orange-700 transition text-sm"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -367,6 +467,126 @@ const submitDecline = async (remarks) => {
         submitText="Decline Group"
         cancelText="Cancel"
       />
+
+      {/* View Group Details Modal */}
+      {viewModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Group Details</h2>
+              <button
+                onClick={() => setViewModal({ isOpen: false, group: null, members: [] })}
+                className="text-gray-500 hover:text-gray-800 font-bold text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {viewModal.group && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Group Name</h3>
+                    <p className="text-gray-900">{viewModal.group.group_name}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Course</h3>
+                    <p className="text-gray-900">{viewModal.group.course}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Location</h3>
+                    <p className="text-gray-900">{viewModal.group.location}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Status</h3>
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      viewModal.group.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      viewModal.group.status === 'declined' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {viewModal.group.status || 'pending'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Creator</h3>
+                    <p className="text-gray-900">{viewModal.group.creator_name || viewModal.group.created_by}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Members</h3>
+                    <p className="text-gray-900">{viewModal.group.current_members || 0} / {viewModal.group.size}</p>
+                  </div>
+                </div>
+                
+                {viewModal.group.description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Description</h3>
+                    <p className="text-gray-900">{viewModal.group.description}</p>
+                  </div>
+                )}
+                
+                {viewModal.group.admin_remarks && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Admin Remarks</h3>
+                    <p className="text-gray-900">{viewModal.group.admin_remarks}</p>
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-3">Group Members ({viewModal.members.length})</h3>
+                  {viewModal.members.length === 0 ? (
+                    <p className="text-gray-500">No members in this group</p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {viewModal.members.map((member) => (
+                        <div key={member.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <div>
+                            <p className="font-medium">{member.first_name} {member.last_name}</p>
+                            <p className="text-sm text-gray-600">{member.email}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            member.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            member.status === 'declined' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {member.status || 'pending'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-red-800 mb-4">Delete Group: {deleteModal.groupName}</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this group? This action cannot be undone and will remove all group data including members, messages, and schedules.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteModal({ isOpen: false, groupId: null, groupName: "" })}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteGroup}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
