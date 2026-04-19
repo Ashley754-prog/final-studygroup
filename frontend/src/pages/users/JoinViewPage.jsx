@@ -792,7 +792,7 @@ return (
                         onClick={() => setSelectedMember(null)}
                         className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
                       >
-                        Back to all members
+                        Back
                       </button>
                     </div>
                   </div>

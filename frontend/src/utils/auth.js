@@ -2,12 +2,20 @@ export const loginUser = (user, token) => {
   localStorage.setItem("user", JSON.stringify(user));
   localStorage.setItem("token", token);
   localStorage.setItem("userSessionTimestamp", Date.now().toString());
+  
+  // Set tab-specific user
+  sessionStorage.setItem("tabUser", user.id.toString());
+  sessionStorage.setItem("tabId", "tab_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9));
 };
 
 export const logoutUser = () => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
   localStorage.removeItem("userSessionTimestamp");
+  
+  // Clear tab-specific data
+  sessionStorage.removeItem("tabUser");
+  sessionStorage.removeItem("tabId");
 };
 
 export const getToken = () => localStorage.getItem("token");
@@ -26,15 +34,30 @@ export const getUser = () => {
     
     // Validate session timestamp to prevent stale data
     const sessionTimestamp = localStorage.getItem("userSessionTimestamp");
+    const tabId = sessionStorage.getItem("tabId");
+    
+    // Create unique tab ID if not exists
+    if (!tabId) {
+      sessionStorage.setItem("tabId", "tab_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9));
+    }
+    
     if (sessionTimestamp) {
       const sessionAge = Date.now() - parseInt(sessionTimestamp);
-      const maxSessionAge = 5 * 60 * 1000; // 5 minutes
+      const maxSessionAge = 30 * 1000; // 30 seconds - much shorter
       
       if (sessionAge > maxSessionAge) {
         console.log("Session expired, clearing data");
         logoutUser();
         return null;
       }
+    }
+    
+    // Check if this tab's user matches the stored user
+    const tabUser = sessionStorage.getItem("tabUser");
+    if (tabUser && tabUser !== parsedUser.id.toString()) {
+      console.log("Tab user mismatch detected, clearing data");
+      logoutUser();
+      return null;
     }
     
     return parsedUser;
