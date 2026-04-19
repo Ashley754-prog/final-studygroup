@@ -5,7 +5,7 @@ import { pool } from "../../config/db.js";
 export const getAdminUserList = async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      "SELECT id, first_name, middle_name, last_name, username, email, is_admin, status FROM users"
+      "SELECT id, first_name, middle_name, last_name, username, email, is_admin, status, is_verified, created_at FROM users"
     );
     res.json(rows);
   } catch (err) {
@@ -88,7 +88,7 @@ export const deleteUserById = async (req, res) => {
       for (const group of userGroups) {
         // Find oldest member to reassign ownership
         const [oldestMember] = await connection.execute(
-          "SELECT user_id FROM group_members WHERE group_id = ? ORDER BY joined_at ASC LIMIT 1", 
+          "SELECT user_id FROM group_members WHERE group_id = ? ORDER BY created_at ASC LIMIT 1", 
           [group.id]
         );
         

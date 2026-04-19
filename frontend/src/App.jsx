@@ -24,6 +24,7 @@ import AboutPage from "./pages/users/AboutPage.jsx";
 import ContactsPage from "./pages/users/ContactsPage.jsx";
 import TermsPage from "./pages/users/TermsPage.jsx";
 import PoliciesPage from "./pages/users/PoliciesPage.jsx";
+import JoinRequestRedirect from "./pages/JoinRequestRedirect.jsx";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -62,8 +63,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/join-request-redirect" element={<JoinRequestRedirect />} />
 
           {/* USER PROTECTED ROUTES (with PageLayout) */}
           <Route element={<PageLayout />}>

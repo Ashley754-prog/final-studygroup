@@ -176,7 +176,7 @@ router.post("/join", async (req, res) => {
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/inbox" 
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/join-request-redirect?groupId=${groupId}" 
                    style="background-color: #800000; color: white; padding: 12px 30px; 
                           text-decoration: none; border-radius: 5px; font-weight: bold;
                           display: inline-block; font-size: 16px;">
@@ -201,13 +201,13 @@ router.post("/join", async (req, res) => {
       }
     } catch (emailErr) {
       console.error("Failed to send join request email:", emailErr);
-      // Continue even if email fails
+      res.status(500).json({ message: "Failed to send email notification" });
     }
 
     // Emit real-time event
     if (io) {
       // Get group details for the notification
-      const [groupData] = await pool.query("SELECT group_name FROM groups WHERE id = ?", [groupId]);
+      const [groupData] = await pool.query("SELECT group_name FROM study_groups WHERE id = ?", [groupId]);
       const [userData] = await pool.query("SELECT username FROM users WHERE id = ?", [userId]);
       
       io.emit("join_request_sent", {

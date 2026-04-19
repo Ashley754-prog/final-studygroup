@@ -214,11 +214,12 @@ const submitDecline = async (remarks) => {
   const declined = filteredGroups.filter((g) => g.status === "declined");
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-maroon mb-6 flex items-center gap-3">
-          <UsersIcon className="w-10 h-10" /> Manage Study Groups
-        </h1>
+    <>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold text-maroon mb-6 flex items-center gap-3">
+            <UsersIcon className="w-10 h-10" /> Manage Study Groups
+          </h1>
 
         {/* Search / Filter */}
         <div className="mb-6 flex items-center gap-3">
@@ -544,11 +545,12 @@ const submitDecline = async (remarks) => {
                             <p className="text-sm text-gray-600">{member.email}</p>
                           </div>
                           <span className={`px-2 py-1 rounded text-xs ${
+                            member.id === viewModal.group.created_by ? 'bg-purple-100 text-purple-800 font-semibold' :
                             member.status === 'approved' ? 'bg-green-100 text-green-800' :
                             member.status === 'declined' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {member.status || 'pending'}
+                            {member.id === viewModal.group.created_by ? 'Creator' : (member.status || 'pending')}
                           </span>
                         </div>
                       ))}
@@ -587,7 +589,9 @@ const submitDecline = async (remarks) => {
           </div>
         </div>
       )}
+        </div>
       </div>
-    </div>
+      <ToastContainer position="top-right" autoClose={3000} />
+    </>
   );
 }
