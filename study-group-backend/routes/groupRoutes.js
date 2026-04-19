@@ -146,6 +146,64 @@ router.post("/join", async (req, res) => {
       created_at: new Date().toISOString()
     });
 
+    // 7. Send email notification to group creator
+    try {
+      const [creatorData] = await pool.query(
+        "SELECT email, first_name FROM users WHERE id = ?", 
+        [groupData.created_by]
+      );
+      
+      if (creatorData.length > 0) {
+        const creatorEmail = creatorData[0].email;
+        const creatorName = creatorData[0].first_name || "Group Creator";
+        
+        const emailMessage = `
+          <div style="font-family: Arial, sans-serif; line-height:1.6; max-width:600px; margin:0 auto;">
+            <div style="background-color: #800000; color: white; padding: 20px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">Crimsons Study Squad</h1>
+            </div>
+            
+            <div style="padding: 30px; background-color: #f9f9f9;">
+              <h2 style="color: #800000; margin-top: 0;">Good day, ${creatorName}!</h2>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                <strong>${username}</strong> wants to join your study group called 
+                <strong>"${groupData.group_name}"</strong>.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                Please click the "Go to Inbox" button below to either approve or decline the join request.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/inbox" 
+                   style="background-color: #800000; color: white; padding: 12px 30px; 
+                          text-decoration: none; border-radius: 5px; font-weight: bold;
+                          display: inline-block; font-size: 16px;">
+                  Go to Inbox
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                You can view this request under the "Join Requests" section in your inbox.
+              </p>
+            </div>
+            
+            <div style="background-color: #800000; color: white; padding: 15px; text-align: center; font-size: 12px;">
+              <p style="margin: 0;">Thank you and have a good day ahead!</p>
+              <p style="margin: 5px 0 0;"> 2024 Crimsons Study Squad</p>
+            </div>
+          </div>
+        `;
+
+        await sendEmail(creatorEmail, `New Join Request: ${username} wants to join "${groupData.group_name}"`, emailMessage);
+        console.log(` Email sent to group creator: ${creatorEmail}`);
+      }
+    } catch (emailErr) {
+      console.error("Failed to send join request email:", emailErr);
+      // Continue even if email fails
+    }
+
     // Emit real-time event
     if (io) {
       // Get group details for the notification
@@ -187,6 +245,69 @@ router.get("/:id", async (req, res) => {
   } catch (err) {
     console.error("Get group error:", err);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET GROUP MEMBERS
+router.get("/:id/members", async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const [members] = await pool.query(`
+      SELECT u.id, u.first_name, u.last_name, u.email, u.username, gm.status, gm.created_at
+      FROM users u
+      JOIN group_members gm ON u.id = gm.user_id
+      WHERE gm.group_id = ?
+      ORDER BY gm.created_at ASC
+    `, [id]);
+    
+    res.json({ data: members });
+  } catch (err) {
+    console.error("Get group members error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE GROUP
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // Delete group members
+      await connection.execute("DELETE FROM group_members WHERE group_id = ?", [id]);
+      
+      // Delete group messages
+      await connection.execute("DELETE FROM group_messages WHERE group_id = ?", [id]);
+      
+      // Delete group schedules
+      await connection.execute("DELETE FROM group_schedules WHERE group_id = ?", [id]);
+      
+      // Delete join requests
+      await connection.execute("DELETE FROM join_requests WHERE group_id = ?", [id]);
+      
+      // Delete notifications related to this group
+      await connection.execute("DELETE FROM notifications WHERE related_id = ? AND type = 'join_request'", [id]);
+      
+      // Delete the group itself
+      await connection.execute("DELETE FROM study_groups WHERE id = ?", [id]);
+      
+      await connection.commit();
+      
+      res.json({ message: "Group deleted successfully!" });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (err) {
+    console.error("Delete group error:", err);
+    res.status(500).json({ message: "Failed to delete group" });
   }
 });
 

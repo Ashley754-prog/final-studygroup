@@ -470,7 +470,7 @@ const submitDecline = async (remarks) => {
 
       {/* View Group Details Modal */}
       {viewModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800">Group Details</h2>
@@ -563,7 +563,7 @@ const submitDecline = async (remarks) => {
 
       {/* Delete Group Confirmation Modal */}
       {deleteModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-bold text-red-800 mb-4">Delete Group: {deleteModal.groupName}</h2>
             <p className="text-gray-600 mb-6">

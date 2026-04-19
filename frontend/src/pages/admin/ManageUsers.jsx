@@ -145,7 +145,9 @@ export default function ManageUsers() {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const res = await axios.get(`${API_BASE_URL}/api/user/admin-list`);
-      setUsers(res.data || []);
+      // Filter out admin accounts for security - admins shouldn't manage other admins
+      const filteredUsers = (res.data || []).filter(user => !user.is_admin);
+      setUsers(filteredUsers);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       toast.error("Failed to fetch users");
@@ -201,7 +203,7 @@ export default function ManageUsers() {
   const confirmDeleteUser = async () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const deleteUrl = `${API_BASE_URL}/api/user/delete/${confirmModal.userId}?deleteData=${confirmModal.deleteData}`;
+      const deleteUrl = `${API_BASE_URL}/api/user/delete/${confirmModal.userId}?deleteData=${confirmModal.deleteData ? 'true' : 'false'}`;
       await axios.delete(deleteUrl);
       
       const message = confirmModal.deleteData 
@@ -315,38 +317,99 @@ export default function ManageUsers() {
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 font-bold"
               onClick={() => setSelectedUser(null)}
             >
-              ✕
+              ×
             </button>
-            <h2 className="text-2xl font-bold mb-4">{selectedUser.username}</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              {selectedUser.username || `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() || 'Unknown User'}
+            </h2>
             
-            <p><strong>Full Name:</strong> {selectedUser.first_name} {selectedUser.middle_name} {selectedUser.last_name}</p>
-            <p className="flex items-center gap-2">
-              <EnvelopeIcon className="w-5 h-5" /> {selectedUser.email}
-            </p>
-            <p className="flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5" /> Created At: {new Date(selectedUser.created_at).toLocaleString()}
-            </p>
-            <p className="flex items-center gap-2">
-              {selectedUser.is_verified ? <CheckCircleIcon className="w-5 h-5 text-green-600" /> : <XCircleIcon className="w-5 h-5 text-red-600" />} 
-              Verified: {selectedUser.is_verified ? "Yes" : "No"}
-            </p>
-            {selectedUser.google_id && (
-              <p className="flex items-center gap-2">
-                <LinkIcon className="w-5 h-5" /> Linked Google Account
-              </p>
-            )}
-            <p><strong>Status:</strong> {selectedUser.status}</p>
-            {selectedUser.bio && <p><strong>Bio:</strong> {selectedUser.bio}</p>}
-            {selectedUser.profile_photo && (
-              <img src={selectedUser.profile_photo} className="mt-3 w-32 h-32 rounded-full" />
-            )}
+            <div className="space-y-3">
+              <div>
+                <strong>Full Name:</strong> 
+                <p className="text-gray-700">
+                  {selectedUser.first_name || ''} {selectedUser.middle_name || ''} {selectedUser.last_name || ''}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <EnvelopeIcon className="w-5 h-5 text-gray-500" /> 
+                <span>{selectedUser.email || 'No email'}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-gray-500" /> 
+                <span>
+                  Created At: {selectedUser.created_at ? 
+                    new Date(selectedUser.created_at).toLocaleString() : 
+                    'Unknown'
+                  }
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {selectedUser.is_verified ? (
+                  <>
+                    <CheckCircleIcon className="w-5 h-5 text-green-600" /> 
+                    <span className="text-green-600 font-semibold">Verified: Yes</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircleIcon className="w-5 h-5 text-red-600" /> 
+                    <span className="text-red-600 font-semibold">Verified: No</span>
+                  </>
+                )}
+              </div>
+              
+              {selectedUser.google_id && (
+                <div className="flex items-center gap-2">
+                  <LinkIcon className="w-5 h-5 text-blue-600" /> 
+                  <span className="text-blue-600">Linked Google Account</span>
+                </div>
+              )}
+              
+              <div>
+                <strong>Status:</strong> 
+                <span className={`ml-2 px-2 py-1 rounded text-sm font-semibold ${
+                  selectedUser.status === 'active' ? 'bg-green-100 text-green-800' :
+                  selectedUser.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {selectedUser.status || 'Unknown'}
+                </span>
+              </div>
+              
+              {selectedUser.bio && (
+                <div>
+                  <strong>Bio:</strong>
+                  <p className="text-gray-700 mt-1">{selectedUser.bio}</p>
+                </div>
+              )}
+              
+              {selectedUser.profile_photo && (
+                <div>
+                  <strong>Profile Photo:</strong>
+                  <img 
+                    src={selectedUser.profile_photo} 
+                    alt="Profile" 
+                    className="mt-2 w-32 h-32 rounded-full object-cover border-2 border-gray-200"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500 pt-2 border-t">
+                User ID: {selectedUser.id || 'Unknown'}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit User Modal */}
       {editModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Edit User: {editModal.user?.username}</h2>
             
@@ -365,7 +428,7 @@ export default function ManageUsers() {
 
       {/* Delete Confirmation Modal */}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-bold text-red-800 mb-4">Delete User: {confirmModal.username}</h2>
             <p className="text-gray-600 mb-6">Choose how you want to delete this user:</p>

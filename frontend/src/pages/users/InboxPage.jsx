@@ -15,6 +15,8 @@ import {
   CheckIcon,
   XMarkIcon,
   TrashIcon,
+  CheckCircleIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 
 export default function InboxPage() {
@@ -97,6 +99,44 @@ export default function InboxPage() {
       setMessages(prev => prev.filter(m => m.id !== id));
       if (selected?.id === id) setSelected(null);
     } catch (err) { toast.error("Failed"); }
+  };
+
+  const approveJoinRequest = async (msg) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.post(`${API_BASE_URL}/api/group/approve`, {
+        groupId: msg.related_id,
+        userId: msg.requester_id
+      });
+      
+      toast.success("Join request approved!");
+      
+      // Mark the notification as processed
+      await deleteNotification(msg.id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve request");
+    }
+  };
+
+  const declineJoinRequest = async (msg) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      await axios.post(`${API_BASE_URL}/api/group/decline`, {
+        groupId: msg.related_id,
+        userId: msg.requester_id
+      });
+      
+      toast.success("Join request declined!");
+      
+      // Mark the notification as processed
+      await deleteNotification(msg.id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to decline request");
+    }
   };
 
   // Admin approvals are now handled via email notifications only
@@ -199,8 +239,27 @@ export default function InboxPage() {
 
                   <div className="flex items-center gap-3">
                       {msg.type === "join_request" && !msg.is_archived && (
-                        <div className="text-sm text-gray-500 italic">
-                          Admin approval required. Check your email for updates.
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveJoinRequest(msg);
+                            }}
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center gap-1"
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              declineJoinRequest(msg);
+                            }}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center gap-1"
+                          >
+                            <XCircleIcon className="w-4 h-4" />
+                            Decline
+                          </button>
                         </div>
                       )}
                     <div className="flex items-center gap-2">

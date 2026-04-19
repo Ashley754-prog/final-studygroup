@@ -109,4 +109,44 @@ router.put("/me", verifyToken, upload.single("profile_photo"), async (req, res) 
   }
 });
 
+// PUT update user by admin (for admin panel)
+router.put("/update/:id", async (req, res) => {
+  const { id } = req.params;
+  const { first_name, middle_name, last_name, username, email } = req.body;
+
+  try {
+    // Check if user exists
+    const [existingUser] = await pool.query("SELECT id FROM users WHERE id = ?", [id]);
+    if (existingUser.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if username or email already exists (excluding current user)
+    const [conflict] = await pool.query(
+      "SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?",
+      [username, email, id]
+    );
+    if (conflict.length > 0) {
+      return res.status(400).json({ message: "Username or email already exists" });
+    }
+
+    // Update user
+    await pool.query(
+      "UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, username = ?, email = ? WHERE id = ?",
+      [first_name, middle_name, last_name, username, email, id]
+    );
+
+    // Return updated user
+    const [updatedUser] = await pool.query(
+      "SELECT id, first_name, middle_name, last_name, username, email, bio, profile_photo, is_admin, is_verified, status, created_at FROM users WHERE id = ?",
+      [id]
+    );
+
+    res.json({ message: "User updated successfully", user: updatedUser[0] });
+  } catch (err) {
+    console.error("Admin update user error:", err);
+    res.status(500).json({ message: "Failed to update user" });
+  }
+});
+
 export default router;
