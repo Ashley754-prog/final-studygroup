@@ -285,10 +285,13 @@ router.delete("/:id", async (req, res) => {
       await connection.execute("DELETE FROM group_messages WHERE group_id = ?", [id]);
       
       // Delete group schedules
-      await connection.execute("DELETE FROM group_schedules WHERE group_id = ?", [id]);
+      await connection.execute("DELETE FROM schedules WHERE groupId = ?", [id]);
       
       // Delete join requests
-      await connection.execute("DELETE FROM join_requests WHERE group_id = ?", [id]);
+      await connection.execute("DELETE FROM group_join_requests WHERE group_id = ?", [id]);
+      
+      // Delete announcements for this group
+      await connection.execute("DELETE FROM announcements WHERE group_id = ?", [id]);
       
       // Delete notifications related to this group
       await connection.execute("DELETE FROM notifications WHERE related_id = ? AND type = 'join_request'", [id]);

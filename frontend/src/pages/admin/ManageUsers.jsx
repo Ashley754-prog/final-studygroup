@@ -38,7 +38,7 @@ export default function ManageUsers() {
       e.preventDefault();
       try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        await axios.put(`${API_BASE_URL}/api/user/update/${user.id}`, formData);
+        await axios.put(`${API_BASE_URL}/api/users/update/${user.id}`, formData);
         onSuccess();
       } catch (err) {
         console.error(err);
@@ -359,7 +359,7 @@ export default function ManageUsers() {
                   </>
                 )}
               </div>
-              
+                            
               {selectedUser.google_id && (
                 <div className="flex items-center gap-2">
                   <LinkIcon className="w-5 h-5 text-blue-600" /> 

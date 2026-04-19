@@ -38,10 +38,10 @@ export const toggleAdminRole = async (req, res) => {
 
 // DELETE USER (any status) - with cascading delete
 export const deleteUserById = async (req, res) => {
-  const { userId } = req.params;
+  const { id } = req.params;
   const { deleteData = false } = req.query; // deleteData=false = account only, true = everything
 
-  if (!userId) {
+  if (!id) {
     return res.status(400).json({ message: "User ID is required" });
   }
 
@@ -53,16 +53,16 @@ export const deleteUserById = async (req, res) => {
     if (deleteData === 'true') {
       // FULL DELETION - Delete everything (original implementation)
       // Delete user's messages
-      await connection.execute("DELETE FROM group_messages WHERE sender_id = ?", [userId]);
+      await connection.execute("DELETE FROM group_messages WHERE sender_id = ?", [id]);
       
       // Delete user's group memberships
-      await connection.execute("DELETE FROM group_members WHERE user_id = ?", [userId]);
+      await connection.execute("DELETE FROM group_members WHERE user_id = ?", [id]);
       
       // Delete user's notifications
-      await connection.execute("DELETE FROM notifications WHERE user_id = ?", [userId]);
+      await connection.execute("DELETE FROM notifications WHERE user_id = ?", [id]);
       
       // Delete announcements for user's created groups (handle foreign key constraint)
-      const [userGroups] = await connection.execute("SELECT id FROM study_groups WHERE created_by = ?", [userId]);
+      const [userGroups] = await connection.execute("SELECT id FROM study_groups WHERE created_by = ?", [id]);
       for (const group of userGroups) {
         await connection.execute("DELETE FROM announcements WHERE group_id = ?", [group.id]);
         // Delete group members for this group
@@ -70,20 +70,20 @@ export const deleteUserById = async (req, res) => {
         // Delete group messages for this group
         await connection.execute("DELETE FROM group_messages WHERE group_id = ?", [group.id]);
         // Delete join requests for this group
-        await connection.execute("DELETE FROM join_requests WHERE group_id = ?", [group.id]);
-        // Delete group schedules for this group
-        await connection.execute("DELETE FROM group_schedules WHERE group_id = ?", [group.id]);
+        await connection.execute("DELETE FROM group_join_requests WHERE group_id = ?", [group.id]);
+        // Delete group schedules for this group (table is called 'schedules')
+        await connection.execute("DELETE FROM schedules WHERE groupId = ?", [group.id]);
       }
       
       // Now delete user's created study groups
-      await connection.execute("DELETE FROM study_groups WHERE created_by = ?", [userId]);
+      await connection.execute("DELETE FROM study_groups WHERE created_by = ?", [id]);
       
       // Finally delete the user
-      await connection.execute("DELETE FROM users WHERE id = ?", [userId]);
+      await connection.execute("DELETE FROM users WHERE id = ?", [id]);
     } else {
       // ACCOUNT ONLY DELETION - Keep groups and data, just remove user account
       // Reassign user's groups to the oldest member or admin
-      const [userGroups] = await connection.execute("SELECT id, group_name FROM study_groups WHERE created_by = ?", [userId]);
+      const [userGroups] = await connection.execute("SELECT id, group_name FROM study_groups WHERE created_by = ?", [id]);
       
       for (const group of userGroups) {
         // Find oldest member to reassign ownership
@@ -102,15 +102,15 @@ export const deleteUserById = async (req, res) => {
       }
       
       // Remove user from all groups they joined
-      await connection.execute("DELETE FROM group_members WHERE user_id = ?", [userId]);
+      await connection.execute("DELETE FROM group_members WHERE user_id = ?", [id]);
       
       // Delete user's notifications
-      await connection.execute("DELETE FROM notifications WHERE user_id = ?", [userId]);
+      await connection.execute("DELETE FROM notifications WHERE user_id = ?", [id]);
       
       // Mark user as deleted but keep record for audit
       await connection.execute(
         "UPDATE users SET email = NULL, username = NULL, status = 'deleted' WHERE id = ?", 
-        [userId]
+        [id]
       );
     }
     
