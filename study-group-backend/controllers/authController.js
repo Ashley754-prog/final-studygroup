@@ -63,29 +63,33 @@ export const googleAuth = async (req, res) => {
     if (existing.length === 0) {
       // Don't auto-create accounts - require manual account creation first
       return res.status(400).json({ 
+        success: false,
         message: "No account found with this Google email. Please create an account first using the Create Account page." 
       });
-    } else {
-      user = existing[0];
-      await pool.query(
-        `UPDATE users SET 
-          first_name = COALESCE(first_name, ?),
-          middle_name = COALESCE(middle_name, ?),
-          last_name = COALESCE(last_name, ?),
-          username = ?,
-          google_id = COALESCE(google_id, ?),
-          is_verified = 1
-         WHERE id = ?`,
-        [first_name, middle_name || null, last_name, username, googleId, user.id]
-      );
-      const [updated] = await pool.query("SELECT * FROM users WHERE id = ?", [user.id]);
-      user = updated[0];
     }
+    
+    user = existing[0];
+    await pool.query(
+      `UPDATE users SET 
+        first_name = COALESCE(first_name, ?),
+        middle_name = COALESCE(middle_name, ?),
+        last_name = COALESCE(last_name, ?),
+        username = ?,
+        google_id = COALESCE(google_id, ?),
+        is_verified = 1
+         WHERE id = ?`,
+      [first_name, middle_name || null, last_name, username, googleId, user.id]
+    );
+    const [updated] = await pool.query("SELECT * FROM users WHERE id = ?", [user.id]);
+    user = updated[0];
 
     // Check if user is banned
     if (user.status === 'banned') {
       console.log('Google login attempt by banned user');
-      return res.status(400).json({ message: "Account has been banned. Please contact the administrator." });
+      return res.status(400).json({ 
+        success: false,
+        message: "Account has been banned. Please contact the administrator." 
+      });
     }
 
     const token = generateToken(user.id);
@@ -103,7 +107,7 @@ export const googleAuth = async (req, res) => {
         is_admin: user.is_admin,
         is_verified: user.is_verified,
         status: user.status
-      },
+      }
     });
   } catch (err) {
     console.error("Google Auth Error:", err.message);
