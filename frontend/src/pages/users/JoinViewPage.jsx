@@ -870,7 +870,24 @@ return (
                     try {
                       // Check if it's a time-only string like "11:49 AM"
                       if (typeof msg.time === 'string' && msg.time.includes(':') && (msg.time.includes('AM') || msg.time.includes('PM'))) {
-                        // It's already a formatted time, return it directly
+                        // It's already a formatted time, apply timezone offset for local dev
+                        const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+                        if (isLocalDev) {
+                          // Parse the time and add 16 hours for local development
+                          const [time, period] = msg.time.split(' ');
+                          const [hours, minutes] = time.split(':');
+                          let hour24 = parseInt(hours);
+                          if (period === 'PM' && hour24 !== 12) hour24 += 12;
+                          if (period === 'AM' && hour24 === 12) hour24 = 0;
+                          
+                          // Add 16 hours and wrap around 24
+                          hour24 = (hour24 + 16) % 24;
+                          
+                          // Convert back to 12-hour format
+                          const newPeriod = hour24 >= 12 ? 'PM' : 'AM';
+                          const newHour = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+                          return `${newHour}:${minutes} ${newPeriod}`;
+                        }
                         return msg.time;
                       }
                       
