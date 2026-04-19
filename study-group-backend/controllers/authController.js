@@ -61,14 +61,10 @@ export const googleAuth = async (req, res) => {
     let user;
 
     if (existing.length === 0) {
-      const [result] = await pool.query(
-        `INSERT INTO users 
-         (first_name, middle_name, last_name, username, email, google_id, is_verified)
-         VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [first_name, middle_name || null, last_name, username, email, googleId]
-      );
-      const [newUser] = await pool.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
-      user = newUser[0];
+      // Don't auto-create accounts - require manual account creation first
+      return res.status(400).json({ 
+        message: "No account found with this Google email. Please create an account first using the Create Account page." 
+      });
     } else {
       user = existing[0];
       await pool.query(
@@ -84,6 +80,12 @@ export const googleAuth = async (req, res) => {
       );
       const [updated] = await pool.query("SELECT * FROM users WHERE id = ?", [user.id]);
       user = updated[0];
+    }
+
+    // Check if user is banned
+    if (user.status === 'banned') {
+      console.log('Google login attempt by banned user');
+      return res.status(400).json({ message: "Account has been banned. Please contact the administrator." });
     }
 
     const token = generateToken(user.id);
@@ -200,6 +202,11 @@ export const login = async (req, res) => {
     if (!user.is_verified) {
       console.log('User not verified');
       return res.status(400).json({ message: "Account not verified" });
+    }
+
+    if (user.status === 'banned') {
+      console.log('User is banned');
+      return res.status(400).json({ message: "Account has been banned. Please contact the administrator." });
     }
 
     const token = generateToken(user.id);

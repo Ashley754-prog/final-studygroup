@@ -82,7 +82,17 @@ localStorage.setItem("user", JSON.stringify(userData));
 
   } catch (err) {
     console.error(err);
-    toast.error(err.message);
+    
+    // Check if error is about banned/inactive account
+    if (err.message && (
+      err.message.toLowerCase().includes('banned') || 
+      err.message.toLowerCase().includes('inactive') ||
+      err.message.toLowerCase().includes('deleted')
+    )) {
+      toast.error("Your account has been banned or deactivated. Please contact the administrator for assistance.");
+    } else {
+      toast.error(err.message || "Login failed. Please check your credentials.");
+    }
   } finally {
     setLoading(false);
   }

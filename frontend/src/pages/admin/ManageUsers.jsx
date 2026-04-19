@@ -237,41 +237,47 @@ export default function ManageUsers() {
           Manage Users
         </h1>
 
-        <div className="grid gap-5">
-          {users.length === 0 ? (
-            <p className="text-gray-500 bg-white p-8 rounded-xl text-center shadow">
-              No users found
-            </p>
-          ) : (
-            users.map((user) => {
-              const isInactive = user.status !== "active";
-
-              return (
-                <div
-                  key={user.id}
-                  className={`bg-white p-6 rounded-xl shadow flex justify-between items-center hover:shadow-lg transition`}
-                >
-                  {/* User Info */}
-                  <div className="flex items-center gap-4">
+        <div className="grid gap-8">
+          {/* Active Users Section */}
+          <div>
+            <h2 className="text-2xl font-bold text-maroon mb-4 flex items-center gap-2">
+              <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              Active Users ({users.filter(u => u.status === 'active').length})
+            </h2>
+            <div className="grid gap-5">
+              {users.filter(u => u.status === 'active').length === 0 ? (
+                <p className="text-gray-500 bg-white p-8 rounded-xl text-center shadow">
+                  No active users found
+                </p>
+              ) : (
+                users.filter(u => u.status === 'active').map((user) => {
+                  const isInactive = user.status !== "active";
+                  return (
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
-                        isInactive ? "bg-gray-400" : "bg-gray-200"
-                      }`}
+                      key={user.id}
+                      className={`bg-white p-6 rounded-xl shadow flex justify-between items-center hover:shadow-lg transition`}
                     >
-                      {user.username?.[0]?.toUpperCase() || user.first_name?.[0] || "U"}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-800">
-                        {user.username || `${user.first_name} ${user.last_name}`}
-                      </h3>
-                      <p className="text-gray-600 flex items-center gap-2">
-                        <EnvelopeIcon className="w-5 h-5" /> {user.email}
-                      </p>
-                      {isInactive && (
-                        <p className="text-xs text-red-600 mt-1 font-semibold">Inactive</p>
-                      )}
-                    </div>
-                  </div>
+                      {/* User Info */}
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
+                            isInactive ? "bg-gray-400" : "bg-gray-200"
+                          }`}
+                        >
+                          {user.username?.[0]?.toUpperCase() || user.first_name?.[0] || "U"}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {user.username || `${user.first_name} ${user.last_name}`}
+                          </h3>
+                          <p className="text-gray-600 flex items-center gap-2">
+                            <EnvelopeIcon className="w-5 h-5" /> {user.email}
+                          </p>
+                          {isInactive && (
+                            <p className="text-xs text-red-600 mt-1 font-semibold">Inactive</p>
+                          )}
+                        </div>
+                      </div>
 
                   {/* Action Buttons */}
                   <div className="flex gap-2">
@@ -306,6 +312,57 @@ export default function ManageUsers() {
               );
             })
           )}
+        </div>
+      </div>
+
+      {/* Archived Users Section */}
+      <div>
+        <h2 className="text-2xl font-bold text-maroon mb-4 flex items-center gap-2">
+          <XCircleIcon className="w-6 h-6 text-red-600" />
+          Archived Users ({users.filter(u => u.status === 'banned').length})
+        </h2>
+        <div className="grid gap-5">
+          {users.filter(u => u.status === 'banned').length === 0 ? (
+            <p className="text-gray-500 bg-white p-8 rounded-xl text-center shadow">
+              No archived users found
+            </p>
+          ) : (
+            users.filter(u => u.status === 'banned').map((user) => (
+              <div
+                key={user.id}
+                className="bg-white p-6 rounded-xl shadow flex justify-between items-center hover:shadow-lg transition opacity-75"
+              >
+                {/* User Info */}
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold bg-gray-400">
+                    {user.username?.[0]?.toUpperCase() || user.first_name?.[0] || "U"}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">
+                      {user.username || `${user.first_name} ${user.last_name}`}
+                    </h3>
+                    <p className="text-gray-600 flex items-center gap-2">
+                      <EnvelopeIcon className="w-5 h-5" /> {user.email}
+                    </p>
+                    <p className="text-xs text-red-600 mt-1 font-semibold">Banned/Archived</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons - Only View Details for archived users */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedUser(user)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
+                  >
+                    <UserIcon className="w-5 h-5" />
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
         </div>
       </div>
 
