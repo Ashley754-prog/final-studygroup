@@ -864,7 +864,21 @@ return (
                   msg.text
                 )}
                 <p className="text-xs opacity-70 mt-1">
-                  {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {(() => {
+                    if (!msg.time) return "";
+                    console.log("Chat time debug:", msg.time); // Debug log
+                    try {
+                      const date = new Date(msg.time);
+                      if (isNaN(date.getTime())) {
+                        console.log("Invalid date detected:", msg.time);
+                        return "";
+                      }
+                      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                    } catch (error) {
+                      console.log("Date parsing error:", error, msg.time);
+                      return "";
+                    }
+                  })()}
                 </p>
               </div>
             </div>
