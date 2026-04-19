@@ -506,6 +506,24 @@ router.get("/my-joined/:userId", async (req, res) => {
   }
 });
 
+// GET USER'S PENDING JOIN REQUESTS (for dashboard)
+router.get("/my-pending/:userId", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const [groups] = await pool.query(`
+      SELECT g.*, u.first_name, u.last_name
+      FROM study_groups g
+      JOIN group_members gm ON g.id = gm.group_id
+      JOIN users u ON g.created_by = u.id
+      WHERE gm.user_id = ? AND gm.status = 'pending'
+    `, [userId]);
+    res.json({ data: groups });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
+
 // GET USER'S CREATED GROUPS (for "Your Created Groups" sidebar in dashboard)
 router.get("/my-groups/:userId", async (req, res) => {
   const { userId } = req.params;

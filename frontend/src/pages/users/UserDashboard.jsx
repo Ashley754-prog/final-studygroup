@@ -46,6 +46,10 @@ export default function UserDashboard() {
       const joinedRes = await axios.get(`${API_BASE_URL}/api/group/my-joined/${userId}`);
       setJoinedGroups(joinedRes.data.data?.map(g => g.id) || []);
 
+      // Pending join requests
+      const pendingRes = await axios.get(`${API_BASE_URL}/api/group/my-pending/${userId}`);
+      setPendingRequests(pendingRes.data.data?.map(g => g.id) || []);
+
     } catch (err) {
       console.error("Error fetching dashboard:", err);
     }

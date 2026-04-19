@@ -74,7 +74,7 @@ export const googleAuth = async (req, res) => {
         first_name = COALESCE(first_name, ?),
         middle_name = COALESCE(middle_name, ?),
         last_name = COALESCE(last_name, ?),
-        username = ?,
+        username = COALESCE(username, ?),
         google_id = COALESCE(google_id, ?),
         is_verified = 1
          WHERE id = ?`,
