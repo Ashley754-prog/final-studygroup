@@ -1,17 +1,11 @@
 export const loginUser = (user, token) => {
   localStorage.setItem("user", JSON.stringify(user));
   localStorage.setItem("token", token);
-  localStorage.setItem("userSessionTimestamp", Date.now().toString());
 };
 
 export const logoutUser = () => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
-  localStorage.removeItem("userSessionTimestamp");
-  
-  // Clear tab-specific data
-  sessionStorage.removeItem("tabUser");
-  sessionStorage.removeItem("tabId");
 };
 
 export const getToken = () => localStorage.getItem("token");
@@ -28,20 +22,6 @@ export const getUser = () => {
       return null;
     }
     
-    // Validate session timestamp to prevent stale data
-    const sessionTimestamp = localStorage.getItem("userSessionTimestamp");
-    
-    if (sessionTimestamp) {
-      const sessionAge = Date.now() - parseInt(sessionTimestamp);
-      const maxSessionAge = 10 * 60 * 1000; // 10 minutes
-      
-      if (sessionAge > maxSessionAge) {
-        console.log("Session expired, clearing data");
-        logoutUser();
-        return null;
-      }
-    }
-    
     return parsedUser;
   } catch (error) {
     console.error("Error parsing user data:", error);
@@ -53,13 +33,10 @@ export const getUser = () => {
 export const validateUserSession = () => {
   const user = getUser();
   if (!user) {
-    console.error("No user session found");
     return false;
   }
   
-  // Additional validation can be added here
   if (!user.id || !user.username) {
-    console.error("Invalid user session structure");
     logoutUser();
     return false;
   }

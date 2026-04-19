@@ -40,62 +40,6 @@ import PageLayout from "./layouts/PageLayout.jsx";
 import AdminPrivateRoute from "./routes/AdminPrivateRoute.jsx";
 
 function App() {
-  // Global session validation - runs once when app loads and on every route change
-  useEffect(() => {
-    const validateSession = () => {
-      const isValid = validateUserSession();
-      if (!isValid) {
-        console.log("Invalid user session detected, clearing data");
-        // Force redirect to login by clearing the path
-        window.location.href = "/login";
-        return false;
-      }
-      return true;
-    };
-
-    // Initial validation
-    validateSession();
-
-    // Listen for storage changes (other tabs/windows)
-    const handleStorageChange = (e) => {
-      if (e.key === "user" || e.key === "token" || e.key === "userSessionTimestamp") {
-        console.log("Storage changed in another tab, revalidating session");
-        validateSession();
-      }
-    };
-
-    // Listen for visibility changes (tab switching)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log("Tab became visible, revalidating session");
-        if (validateSession()) {
-          refreshSession(); // Refresh session when tab becomes active
-        }
-      }
-    };
-
-    // Listen for user activity to refresh session
-    const handleUserActivity = () => {
-      refreshSession();
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("mousedown", handleUserActivity);
-    window.addEventListener("keydown", handleUserActivity);
-    window.addEventListener("scroll", handleUserActivity);
-    window.addEventListener("click", handleUserActivity);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("mousedown", handleUserActivity);
-      window.removeEventListener("keydown", handleUserActivity);
-      window.removeEventListener("scroll", handleUserActivity);
-      window.removeEventListener("click", handleUserActivity);
-    };
-  }, []);
-
   return (
     <RealtimeProvider>
       <NotificationProvider>
