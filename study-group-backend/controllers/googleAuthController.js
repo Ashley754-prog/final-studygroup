@@ -61,46 +61,46 @@ export const googleAuth = async (req, res) => {
     let user;
 
     if (existingUsers.length === 0) {
-      const [result] = await pool.query(
-        `INSERT INTO users 
-        (first_name, middle_name, last_name, username, email, google_id, is_verified) 
-        VALUES (?, ?, ?, ?, ?, ?, true)`,
-        [first_name, middle_name || null, last_name, username, email, googleId]
-      );
-
-      user = {
-        id: result.insertId,
-        first_name,
-        middle_name: middle_name || null,
-        last_name,
-        username,
-        email,
-      };
-    } else {
-      user = existingUsers[0];
-
-      await pool.query(
-        `UPDATE users 
-        SET first_name = COALESCE(first_name, ?),
-            middle_name = COALESCE(middle_name, ?),
-            last_name = COALESCE(last_name, ?),
-            username = ?,
-            google_id = COALESCE(google_id, ?)
-        WHERE id = ?`,
-        [first_name, middle_name || null, last_name, username, googleId, user.id]
-      );
-
-      const [updated] = await pool.query(
-        "SELECT * FROM users WHERE id = ?",
-        [user.id]
-      );
-      user = updated[0];
+      // Don't auto-create accounts - require manual account creation first
+      return res.status(400).json({ 
+        success: false,
+        message: "No account found with this Google email. Please create an account first using the Create Account page." 
+      });
     }
+    
+    user = existingUsers[0];
+
+    // Check if user is banned
+    if (user.status === 'banned') {
+      return res.status(400).json({ 
+        success: false,
+        message: "Account has been banned. Please contact the administrator." 
+      });
+    }
+
+    await pool.query(
+      `UPDATE users 
+      SET first_name = COALESCE(first_name, ?),
+          middle_name = COALESCE(middle_name, ?),
+          last_name = COALESCE(last_name, ?),
+          username = ?,
+          google_id = COALESCE(google_id, ?),
+          is_verified = 1
+      WHERE id = ?`,
+      [first_name, middle_name || null, last_name, username, googleId, user.id]
+    );
+
+    const [updated] = await pool.query(
+      "SELECT * FROM users WHERE id = ?",
+      [user.id]
+    );
+    user = updated[0];
 
     // JWT Token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
+      success: true,
       token,
       user: {
         id: user.id,
@@ -109,6 +109,9 @@ export const googleAuth = async (req, res) => {
         last_name: user.last_name,
         username: user.username,
         email: user.email,
+        is_admin: user.is_admin,
+        is_verified: user.is_verified,
+        status: user.status
       },
     });
 
